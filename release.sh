@@ -1,10 +1,21 @@
 #!/bin/bash
+# This script automates all the tasks needed to make a new Android SDK release.
+#
+# Usage: ./release.sh [X.X.X] where X.X.X is the release version. This param is optional.
+#
+# If no version is given the next release version used will be the one that appears
+# on gradle.properties (VERSION_NAME).
 
-# externalize vars
 if [ ! -f gradle.properties ]; then
     echo "gradle.properties was not found. Make sure you are running this script from its root folder." 
     exit
 fi
+if [ ! -f ~/.gradle/gradle.properties.bak ]; then
+    echo "~/.gradle/gradle.properties.bak was not found" 
+    exit
+fi
+
+mv ~/.gradle/gradle.properties.bak ~/.gradle/gradle.properties
 
 currentBranch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
 releaseBranch=master
@@ -13,7 +24,7 @@ docBranch=gh-pages
 # stash any changes
 git stash
 
-# fetch relese branch
+# checkout release branch
 git checkout $releaseBranch
 git pull origin $releaseBranch
 
@@ -82,6 +93,16 @@ printf "\n\n"
 rm gradle.properties.bak
 rm README.md.bak
 
+# upload library to maven
+if ./gradlew uploadArchives ; then
+    echo "Hello"
+else
+    echo "Bye"
+fi
+
+read -r -p "Does this look right to you? [y/n]: " key
+
+
 # commit new version
 git commit -am "New release: $releaseVersion"
 
@@ -92,9 +113,6 @@ git push origin $releaseBranch
 newTag=v$releaseVersion
 git tag $newTag
 git push origin $newTag
-
-# upload library to maven
-./gradlew uploadArchives
 
 # update next snapshot version
 read -r -p "Continue updating github with the next snasphot version $nextSnapshotVersion? [y/n]: " key
@@ -129,7 +147,12 @@ cp -r build/docs/javadoc/* .
 git commit -am "Update documentation for $releaseVersion"
 git push origin gh-pages
 
-
 # restore previous state
 git checkout $currentBranch
 git stash pop
+
+# finish function
+
+# clean up
+
+# remove 

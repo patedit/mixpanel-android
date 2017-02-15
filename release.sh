@@ -38,6 +38,9 @@ cleanUp () {
     if [ -f README.md.bak ]; then
         rm README.md.bak  
     fi
+    if [ -f changes.txt ]; then
+        rm changes.txt 
+    fi
 }
 
 restoreFiles () {
@@ -67,22 +70,21 @@ fi
 nextSnapshotVersion=$(echo $releaseVersion | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}')-SNAPSHOT
 
 # change version on gradle.properties - Make sure there are no spaces. Expected format: VERSION_NAME=.*
-sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$releaseVersion',' gradle.properties
+sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$releaseVersion',w changes.txt' gradle.properties
+if [ ! -s changes.txt ]; then
+    echo "${RED}Err... gradle.properties was not updated. The following command was used:"
+    echo "${RED}sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$releaseVersion',' gradle.properties"
+    abort
+fi
+
+rm changes.txt
 
 # change date latest release
 newDate=$(date "+%B %d\, %Y") # Need the slash before the comma so next command does not fail
 sed -i.bak "s,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpanel-android/releases/tag/v\).*\()\),\1$newDate\2$releaseVersion\3$releaseVersion\4," README.md
-
-printf '\n\n'
-if [ ! -f README.md.bak ]; then
+if [ ! -s changes.txt ]; then
     echo "${RED}Err... README.md was not updated. The following command was used:"
     echo "${RED}sed -i.bak 's,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpanel-android/releases/tag/v\).*\()\),\1$newDate\2$releaseVersion\3$releaseVersion\4,' README.md"
-    abort
-fi
-
-if [ ! -f gradle.properties.bak ]; then
-    echo "${RED}Err... gradle.properties was not updated. The following command was used:"
-    echo "${RED}sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$releaseVersion',' gradle.properties"
     abort
 fi
 

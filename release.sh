@@ -7,6 +7,7 @@
 # on gradle.properties (VERSION_NAME).
 
 GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
@@ -27,7 +28,6 @@ abort () {
 
 quit () {
     mv ~/.gradle/gradle.properties ~/.gradle/gradle.properties.bak
-    git checkout $currentBranch
     exit
 }
 
@@ -50,11 +50,11 @@ restoreFiles () {
 
 mv ~/.gradle/gradle.properties.bak ~/.gradle/gradle.properties
 
-currentBranch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
 releaseBranch=master
 docBranch=gh-pages
 
 # checkout release branch
+printf "${YELLOW}Checking out $releaseBranch...${NC}\n"
 git checkout $releaseBranch
 git pull origin $releaseBranch
 
@@ -72,29 +72,27 @@ nextSnapshotVersion=$(echo $releaseVersion | awk -F. -v OFS=. 'NF==1{print ++$NF
 # change version on gradle.properties - Make sure there are no spaces. Expected format: VERSION_NAME=.*
 sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$releaseVersion',w changes.txt' gradle.properties
 if [ ! -s changes.txt ]; then
-    echo "${RED}Err... gradle.properties was not updated. The following command was used:"
-    echo "${RED}sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$releaseVersion',' gradle.properties"
+    printf "\n${RED}Err... gradle.properties was not updated. The following command was used:\n"
+    printf "sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$releaseVersion',' gradle.properties${NC}\n\n"
     abort
 fi
-
 rm changes.txt
 
 # change date latest release
 newDate=$(date "+%B %d\, %Y") # Need the slash before the comma so next command does not fail
-sed -i.bak "s,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpanel-android/releases/tag/v\).*\()\),\1$newDate\2$releaseVersion\3$releaseVersion\4," README.md
+sed -i.bak "s,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpanel-android/releases/tag/v\).*\()\),\1$newDate\2$releaseVersion\3$releaseVersion\4,w changes.txt" README.md
 if [ ! -s changes.txt ]; then
-    echo "${RED}Err... README.md was not updated. The following command was used:"
-    echo "${RED}sed -i.bak 's,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpanel-android/releases/tag/v\).*\()\),\1$newDate\2$releaseVersion\3$releaseVersion\4,' README.md"
+    printf "\n${RED}Err... README.md was not updated. The following command was used:\n"
+    printf "sed -i.bak 's,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpanel-android/releases/tag/v\).*\()\),\1$newDate\2$releaseVersion\3$releaseVersion\4,' README.md${NC}\n\n"
     abort
 fi
 
-printf "New gradle.properties:\n"
-printf '%s\n' '-----------------------'
+printf "\n"
+printf "${GREEN}New gradle.properties:${NC}\n"
 head -n 1 gradle.properties
 printf '[....]\n\n\n'
 
-printf "New README.md:\n"
-printf '%s\n' '-----------------------'
+printf "${GREEN}New README.md:${NC}\n"
 head -n 9 README.md
 printf '[....]\n\n\n'
 
@@ -109,9 +107,9 @@ fi
 cleanUp
 
 # upload library to maven
-printf '\n\nUploading archives....\n'
+printf "\n\n${YELLOW}Uploading archives...${NC}\n"
 if ! ./gradlew uploadArchives ; then
-    printf "Err.. Seems there was a problem runing ./gradlew uploadArchives"
+    printf "${RED}Err.. Seems there was a problem runing ./gradlew uploadArchives\n${NC}"
     abort
 fi
 

@@ -15,6 +15,37 @@ if [ ! -f ~/.gradle/gradle.properties.bak ]; then
     exit
 fi
 
+abort () {
+    restoreBackupFiles
+    cleanUp
+    quit
+}
+
+quit () {
+    mv ~/.gradle/gradle.properties ~/.gradle/gradle.properties.bak
+    git checkout $currentBranch
+    git stash pop
+    exit
+}
+
+cleanUp () {
+    if [ -f gradle.properties.bak ]; then
+        rm gradle.properties.bak   
+    fi
+    if [ -f README.md.bak ]; then
+        rm README.md.bak  
+    fi
+}
+
+restoreBackupFiles () {
+    if [ -f gradle.properties.bak ]; then
+        cp gradle.properties.bak gradle.properties  
+    fi
+    if [ -f README.md.bak ]; then
+        cp README.md.bak README.md
+    fi
+}
+
 mv ~/.gradle/gradle.properties.bak ~/.gradle/gradle.properties
 
 currentBranch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
@@ -132,34 +163,3 @@ printf 'Also, do not forget to update our CHANGELOG (https://github.com/mixpanel
 printf 'And finally, release the library from https://oss.sonatype.org/index.html\n\n'
 
 quit
-
-abort () {
-    restoreBackupFiles
-    cleanUp
-    quit
-}
-
-quit () {
-    mv ~/.gradle/gradle.properties ~/.gradle/gradle.properties.bak
-    git checkout $currentBranch
-    git stash pop
-    exit
-}
-
-cleanUp () {
-    if [ -f gradle.properties.bak ]; then
-        rm gradle.properties.bak   
-    fi
-    if [ -f README.md.bak ]; then
-        rm README.md.bak  
-    fi
-}
-
-restoreBackupFiles () {
-    if [ -f gradle.properties.bak ]; then
-        cp gradle.properties.bak gradle.properties  
-    fi
-    if [ -f README.md.bak ]; then
-        cp README.md.bak README.md
-    fi
-}

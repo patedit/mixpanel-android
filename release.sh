@@ -16,7 +16,7 @@ if [ ! -f ~/.gradle/gradle.properties.bak ]; then
 fi
 
 abort () {
-    restoreBackupFiles
+    restoreFiles
     cleanUp
     quit
 }
@@ -37,13 +37,9 @@ cleanUp () {
     fi
 }
 
-restoreBackupFiles () {
-    if [ -f gradle.properties.bak ]; then
-        cp gradle.properties.bak gradle.properties  
-    fi
-    if [ -f README.md.bak ]; then
-        cp README.md.bak README.md
-    fi
+restoreFiles () {
+    git checkout -- gradle.properties
+    git checkout -- README.md
 }
 
 mv ~/.gradle/gradle.properties.bak ~/.gradle/gradle.properties
@@ -110,6 +106,7 @@ fi
 cleanUp
 
 # upload library to maven
+printf 'Uploading archives....\n'
 if ! ./gradlew uploadArchives ; then
     printf "Err.. Seems there was a problem runing ./gradlew uploadArchives"
     abort
@@ -145,9 +142,10 @@ if [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
     git push origin master
 else
     printf "\nReverting.... Make sure to update this manually.\n"
-    restoreBackupFiles
-    cleanUp
+    restoreFiles
 fi
+
+cleanUp
 
 # update documentation
 printf '\nUpdating documentation...\n'

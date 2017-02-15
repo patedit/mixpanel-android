@@ -156,3 +156,5 @@ git stash pop
 # clean up
 
 # remove 
+# mv .bak to gradle.properties
+# rm.bak

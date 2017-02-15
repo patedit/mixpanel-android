@@ -24,7 +24,6 @@ abort () {
 quit () {
     mv ~/.gradle/gradle.properties ~/.gradle/gradle.properties.bak
     git checkout $currentBranch
-    git stash pop
     exit
 }
 
@@ -47,9 +46,6 @@ mv ~/.gradle/gradle.properties.bak ~/.gradle/gradle.properties
 currentBranch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
 releaseBranch=master
 docBranch=gh-pages
-
-# stash any changes
-git stash
 
 # checkout release branch
 git checkout $releaseBranch

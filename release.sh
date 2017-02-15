@@ -133,20 +133,20 @@ printf 'And finally, release the library from https://oss.sonatype.org/index.htm
 
 quit
 
-function abort () {
+abort () {
     restoreBackupFiles
     cleanUp
     quit
 }
 
-function quit () {
+quit () {
     mv ~/.gradle/gradle.properties ~/.gradle/gradle.properties.bak
     git checkout $currentBranch
     git stash pop
     exit
 }
 
-function cleanUp () {
+cleanUp () {
     if [ -f gradle.properties.bak ]; then
         rm gradle.properties.bak   
     fi
@@ -155,7 +155,7 @@ function cleanUp () {
     fi
 }
 
-function restoreBackupFiles () {
+restoreBackupFiles () {
     if [ -f gradle.properties.bak ]; then
         cp gradle.properties.bak gradle.properties  
     fi

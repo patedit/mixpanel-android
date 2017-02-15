@@ -1,5 +1,5 @@
 #!/bin/bash
-# This script automates all the tasks needed to make a new Android SDK release.
+# This script automates all the tasks needed to make a new Mixpanel Android SDK release.
 #
 # Usage: ./release.sh [X.X.X] where X.X.X is the release version. This param is optional.
 #
@@ -49,21 +49,13 @@ sed -i.bak "s,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpane
 if [ ! -f README.md.bak ]; then
     echo "Err... README.md was not updated. The following command was used:"
     echo "sed -i.bak 's,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpanel-android/releases/tag/v\).*\()\),\1$newDate\2$releaseVersion\3$releaseVersion\4,' README.md"
-    cp gradle.properties.bak gradle.properties
-    cp README.md.bak README.md
-    rm gradle.properties.bak
-    rm README.md.bak    
-    exit
+    abort   
 fi
 
 if [ ! -f gradle.properties.bak ]; then
     echo "Err... gradle.properties was not updated. The following command was used:"
     echo "sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$releaseVersion',' gradle.properties"
-    cp gradle.properties.bak gradle.properties
-    cp README.md.bak README.md
-    rm gradle.properties.bak
-    rm README.md.bak    
-    exit
+    abort   
 fi
 
 printf "New gradle.properties:\n"
@@ -80,28 +72,22 @@ read -r -p "Does this look right to you? [y/n]: " key
 
 if ! [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
     printf "\nBummer! Aborting release...\n"
-    cp gradle.properties.bak gradle.properties
-    cp README.md.bak README.md
-    rm gradle.properties.bak
-    rm README.md.bak
-    exit
+    abort
 fi
-
-printf "\n\n"
 
 # remove backup file
-rm gradle.properties.bak
-rm README.md.bak
+cleanUp
 
 # upload library to maven
-if ./gradlew uploadArchives ; then
-    echo "Hello"
-else
-    echo "Bye"
+if ! ./gradlew uploadArchives ; then
+    printf "Err.. Seems there was a problem runing ./gradlew uploadArchives"
+    abort
 fi
 
-read -r -p "Does this look right to you? [y/n]: " key
-
+read -r -p "Continue pushing to github? [y/n]: " key
+if ! [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+    quit
+fi
 
 # commit new version
 git commit -am "New release: $releaseVersion"
@@ -115,46 +101,65 @@ git tag $newTag
 git push origin $newTag
 
 # update next snapshot version
-read -r -p "Continue updating github with the next snasphot version $nextSnapshotVersion? [y/n]: " key
-if ! [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-    sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$nextSnapshotVersion',' gradle.properties
-    printf "New gradle.properties:\n"
-    printf '%s\n' '-----------------------'
-    head -n 1 gradle.properties
-    printf '[....]\n\n\n'
+printf '\nUpdating next snapshot version...\n'
+sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$nextSnapshotVersion',' gradle.properties
+printf "\nNew gradle.properties:\n"
+printf '%s\n' '-----------------------'
+head -n 1 gradle.properties
+printf '[....]\n\n\n'
 
-    read -r -p "Does this look right to you? [y/n]: " key
-
-    if [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-        git commit -am "Update master with next snasphot version $nextSnapshotVersion"
-        git push origin master
-    else
-        printf "\nReverting....\n"
-        cp gradle.properties.bak gradle.properties
-        rm gradle.properties.bak
-    fi
+read -r -p "Does this look right to you? [y/n]: " key
+if [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+    git commit -am "Update master with next snasphot version $nextSnapshotVersion"
+    git push origin master
+else
+    printf "\nReverting.... Make sure to update this manually.\n"
+    restoreBackupFiles
+    cleanUp
 fi
 
 # update documentation
-read -r -p "Do you want to update the documentation? [y/n]: " key
-if ! [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-    printf "\nDone!\n"
-    exit
-fi
+printf '\nUpdating documentation...\n'
 git checkout $docBranch
 git pull origin origin $docBranch
 cp -r build/docs/javadoc/* .
 git commit -am "Update documentation for $releaseVersion"
 git push origin gh-pages
 
-# restore previous state
-git checkout $currentBranch
-git stash pop
+printf '\nAll done!\n'
+printf 'Make sure you make a new release at https://github.com/mixpanel/mixpanel-android/releases/new'
+printf 'Also, do not forget to update our CHANGELOG (https://github.com/mixpanel/mixpanel-android/wiki/Changelog)'
+printf 'And finally, release the library from https://oss.sonatype.org/index.html\n\n'
 
-# finish function
+quit
 
-# clean up
+function abort {
+    restoreBackupFiles
+    cleanUp
+    quit
+}
 
-# remove 
-# mv .bak to gradle.properties
-# rm.bak
+function quit {
+    mv ~/.gradle/gradle.properties ~/.gradle/gradle.properties.bak
+    git checkout $currentBranch
+    git stash pop
+    exit
+}
+
+function cleanUp {
+    if [ -f gradle.properties.bak ]; then
+        rm gradle.properties.bak   
+    fi
+    if [ -f README.md.bak ]; then
+        rm README.md.bak  
+    fi
+}
+
+function restoreBackupFiles {
+    if [ -f gradle.properties.bak ]; then
+        cp gradle.properties.bak gradle.properties  
+    fi
+    if [ -f README.md.bak ]; then
+        cp README.md.bak README.md
+    fi
+}

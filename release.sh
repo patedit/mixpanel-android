@@ -6,6 +6,10 @@
 # If no version is given the next release version used will be the one that appears
 # on gradle.properties (VERSION_NAME).
 
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m'
+
 if [ ! -f gradle.properties ]; then
     echo "gradle.properties was not found. Make sure you are running this script from its root folder." 
     exit
@@ -71,14 +75,14 @@ sed -i.bak "s,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpane
 
 printf '\n\n'
 if [ ! -f README.md.bak ]; then
-    echo "Err... README.md was not updated. The following command was used:"
-    echo "sed -i.bak 's,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpanel-android/releases/tag/v\).*\()\),\1$newDate\2$releaseVersion\3$releaseVersion\4,' README.md"
+    echo "${RED}Err... README.md was not updated. The following command was used:"
+    echo "${RED}sed -i.bak 's,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpanel-android/releases/tag/v\).*\()\),\1$newDate\2$releaseVersion\3$releaseVersion\4,' README.md"
     abort
 fi
 
 if [ ! -f gradle.properties.bak ]; then
-    echo "Err... gradle.properties was not updated. The following command was used:"
-    echo "sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$releaseVersion',' gradle.properties"
+    echo "${RED}Err... gradle.properties was not updated. The following command was used:"
+    echo "${RED}sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$releaseVersion',' gradle.properties"
     abort
 fi
 
@@ -135,6 +139,7 @@ printf '[....]\n\n\n'
 
 read -r -p "Does this look right to you? [y/n]: " key
 if [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
+    printf '\n\n'
     git commit -am "Update master with next snasphot version $nextSnapshotVersion"
     git push origin master
 else
@@ -145,16 +150,16 @@ fi
 cleanUp
 
 # update documentation
-printf '\nUpdating documentation...\n'
+printf '\n\nUpdating documentation...\n\n'
 git checkout $docBranch
-git pull origin origin $docBranch
+git pull origin $docBranch
 cp -r build/docs/javadoc/* .
 git commit -am "Update documentation for $releaseVersion"
 git push origin gh-pages
 
-printf '\nAll done!\n'
-printf 'Make sure you make a new release at https://github.com/mixpanel/mixpanel-android/releases/new'
-printf 'Also, do not forget to update our CHANGELOG (https://github.com/mixpanel/mixpanel-android/wiki/Changelog)'
+printf '\n${GREEN}All done!\n'
+printf 'Make sure you make a new release at https://github.com/mixpanel/mixpanel-android/releases/new\n'
+printf 'Also, do not forget to update our CHANGELOG (https://github.com/mixpanel/mixpanel-android/wiki/Changelog)\n'
 printf 'And finally, release the library from https://oss.sonatype.org/index.html\n\n'
 
 quit

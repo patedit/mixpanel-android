@@ -111,7 +111,7 @@ fi
 
 read -r -p "Continue pushing to github? [y/n]: " key
 if ! [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-    quit
+    abort
 fi
 
 # commit new version

@@ -49,13 +49,13 @@ sed -i.bak "s,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpane
 if [ ! -f README.md.bak ]; then
     echo "Err... README.md was not updated. The following command was used:"
     echo "sed -i.bak 's,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpanel-android/releases/tag/v\).*\()\),\1$newDate\2$releaseVersion\3$releaseVersion\4,' README.md"
-    abort   
+    abort
 fi
 
 if [ ! -f gradle.properties.bak ]; then
     echo "Err... gradle.properties was not updated. The following command was used:"
     echo "sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$releaseVersion',' gradle.properties"
-    abort   
+    abort
 fi
 
 printf "New gradle.properties:\n"
@@ -133,20 +133,20 @@ printf 'And finally, release the library from https://oss.sonatype.org/index.htm
 
 quit
 
-function abort {
+abort {
     restoreBackupFiles
     cleanUp
     quit
 }
 
-function quit {
+quit {
     mv ~/.gradle/gradle.properties ~/.gradle/gradle.properties.bak
     git checkout $currentBranch
     git stash pop
     exit
 }
 
-function cleanUp {
+cleanUp {
     if [ -f gradle.properties.bak ]; then
         rm gradle.properties.bak   
     fi
@@ -155,7 +155,7 @@ function cleanUp {
     fi
 }
 
-function restoreBackupFiles {
+restoreBackupFiles {
     if [ -f gradle.properties.bak ]; then
         cp gradle.properties.bak gradle.properties  
     fi

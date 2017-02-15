@@ -73,6 +73,7 @@ sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$releaseVersion',' gradle.properties
 newDate=$(date "+%B %d\, %Y") # Need the slash before the comma so next command does not fail
 sed -i.bak "s,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpanel-android/releases/tag/v\).*\()\),\1$newDate\2$releaseVersion\3$releaseVersion\4," README.md
 
+printf '\n\n'
 if [ ! -f README.md.bak ]; then
     echo "Err... README.md was not updated. The following command was used:"
     echo "sed -i.bak 's,^\(##### _\).*\(_ - \[v\).*\(](https://github.com/mixpanel/mixpanel-android/releases/tag/v\).*\()\),\1$newDate\2$releaseVersion\3$releaseVersion\4,' README.md"

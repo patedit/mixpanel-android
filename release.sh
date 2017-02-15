@@ -103,7 +103,7 @@ fi
 cleanUp
 
 # upload library to maven
-printf 'Uploading archives....\n'
+printf '\n\nUploading archives....\n'
 if ! ./gradlew uploadArchives ; then
     printf "Err.. Seems there was a problem runing ./gradlew uploadArchives"
     abort

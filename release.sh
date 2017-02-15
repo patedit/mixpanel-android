@@ -119,21 +119,21 @@ if ! [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
 fi
 
 # commit new version
+printf "\n\n${YELLOW}Pushing changes...${NC}\n"
 git commit -am "New release: $releaseVersion"
-
 # push changes
 git push origin $releaseBranch
 
 # create new tag
 newTag=v$releaseVersion
+printf "\n\n${YELLOW}Creating new tag $newTag...${NC}\n"
 git tag $newTag
 git push origin $newTag
 
 # update next snapshot version
-printf '\nUpdating next snapshot version...\n'
+printf "\n{YELLOW}Updating next snapshot version...${NC}\n"
 sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$nextSnapshotVersion',' gradle.properties
-printf "\nNew gradle.properties:\n"
-printf '%s\n' '-----------------------'
+printf "${GREEN}New gradle.properties:${NC}\n"
 head -n 1 gradle.properties
 printf '[....]\n\n\n'
 
@@ -150,16 +150,16 @@ fi
 cleanUp
 
 # update documentation
-printf '\n\nUpdating documentation...\n\n'
+printf "\n\n${YELLOW}Updating documentation...\n\n"
 git checkout $docBranch
 git pull origin $docBranch
 cp -r build/docs/javadoc/* .
 git commit -am "Update documentation for $releaseVersion"
 git push origin gh-pages
 
-printf '\n${GREEN}All done!\n'
-printf 'Make sure you make a new release at https://github.com/mixpanel/mixpanel-android/releases/new\n'
-printf 'Also, do not forget to update our CHANGELOG (https://github.com/mixpanel/mixpanel-android/wiki/Changelog)\n'
-printf 'And finally, release the library from https://oss.sonatype.org/index.html\n\n'
+printf "\n${GREEN}All done!\n"
+printf "Make sure you make a new release at https://github.com/mixpanel/mixpanel-android/releases/new\n"
+printf "Also, do not forget to update our CHANGELOG (https://github.com/mixpanel/mixpanel-android/wiki/Changelog)\n"
+printf "And finally, release the library from https://oss.sonatype.org/index.html\n\n"
 
 quit

@@ -161,6 +161,6 @@ git push origin gh-pages
 printf "\n${GREEN}All done!\n"
 printf "Make sure you make a new release at https://github.com/mixpanel/mixpanel-android/releases/new\n"
 printf "Also, do not forget to update our CHANGELOG (https://github.com/mixpanel/mixpanel-android/wiki/Changelog)\n"
-printf "And finally, release the library from https://oss.sonatype.org/index.html\n\n"
+printf "And finally, release the library from https://oss.sonatype.org/index.html\n\n${NC}"
 
 quit

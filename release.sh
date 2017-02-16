@@ -12,18 +12,18 @@ RED='\033[0;31m'
 ORANGE='\033[0;33m'
 NC='\033[0m'
 
-if [ ! -f gradle.properties ]; then
-    printf "${RED}gradle.properties was not found. Make sure you are running this script from its root folder${NC}\n" 
-    exit
-fi
-if [ ! -f ~/.gradle/gradle.properties.bak ]; then
-    printf "${RED}~/.gradle/gradle.properties.bak was not found${NC}\n" 
-    exit
-fi
-if [[ ! -z $(git status -s) ]]; then
-    printf "${RED}You have unstaged/untracked changes${NC}\n"
-    exit
-fi
+# if [ ! -f gradle.properties ]; then
+#     printf "${RED}gradle.properties was not found. Make sure you are running this script from its root folder${NC}\n" 
+#     exit
+# fi
+# if [ ! -f ~/.gradle/gradle.properties.bak ]; then
+#     printf "${RED}~/.gradle/gradle.properties.bak was not found${NC}\n" 
+#     exit
+# fi
+# if [[ ! -z $(git status -s) ]]; then
+#     printf "${RED}You have unstaged/untracked changes${NC}\n"
+#     exit
+# fi
 
 abort () {
     restoreFiles
@@ -61,13 +61,13 @@ if [ -z "$1" ]
 else
     releaseVersion=$1
 fi
-echo $releaseVersion | grep -q "[0-9]\.[0-9]?\.[0-9]$"
+echo $releaseVersion | grep -q "^[0-9]\+.[0-9]\+.[0-9]$"
 if [ ! $? -eq 0 ] ;then
     printf "${RED}Wrong version format (X.X.X) for: $releaseVersion\n"
-    printf "Check your gradle.properties file or the arguments you are passing.${NC}\n"
+    printf "Check your gradle.properties file or the argument you passed.${NC}\n"
     exit
 fi
-
+ 
 originalBranch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
 releaseBranch=master
 docBranch=gh-pages

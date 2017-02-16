@@ -12,18 +12,18 @@ RED='\033[0;31m'
 ORANGE='\033[0;33m'
 NC='\033[0m'
 
-# if [ ! -f gradle.properties ]; then
-#     printf "${RED}gradle.properties was not found. Make sure you are running this script from its root folder${NC}\n" 
-#     exit
-# fi
-# if [ ! -f ~/.gradle/gradle.properties.bak ]; then
-#     printf "${RED}~/.gradle/gradle.properties.bak was not found${NC}\n" 
-#     exit
-# fi
-# if [[ ! -z $(git status -s) ]]; then
-#     printf "${RED}You have unstaged/untracked changes${NC}\n"
-#     exit
-# fi
+if [ ! -f gradle.properties ]; then
+    printf "${RED}gradle.properties was not found. Make sure you are running this script from its root folder${NC}\n" 
+    exit
+fi
+if [ ! -f ~/.gradle/gradle.properties.bak ]; then
+    printf "${RED}~/.gradle/gradle.properties.bak was not found${NC}\n" 
+    exit
+fi
+if [[ ! -z $(git status -s) ]]; then
+    printf "${RED}You have unstaged/untracked changes${NC}\n"
+    exit
+fi
 
 abort () {
     restoreFiles

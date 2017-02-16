@@ -28,6 +28,7 @@ abort () {
 
 quit () {
     mv ~/.gradle/gradle.properties ~/.gradle/gradle.properties.bak
+    git checkout $originalBranch
     exit
 }
 
@@ -50,6 +51,7 @@ restoreFiles () {
 
 mv ~/.gradle/gradle.properties.bak ~/.gradle/gradle.properties
 
+originalBranch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
 releaseBranch=master
 docBranch=gh-pages
 
@@ -65,6 +67,8 @@ if [ -z "$1" ]
 else
     releaseVersion=$1
 fi
+
+# TODO validate releaseVersion
 
 # find next snapshot version by incrementing the release version
 nextSnapshotVersion=$(echo $releaseVersion | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}')-SNAPSHOT

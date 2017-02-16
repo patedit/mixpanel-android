@@ -53,17 +53,6 @@ restoreFiles () {
     git checkout -- README.md
 }
 
-mv ~/.gradle/gradle.properties.bak ~/.gradle/gradle.properties
-
-originalBranch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
-releaseBranch=master
-docBranch=gh-pages
-
-# checkout release branch
-printf "${YELLOW}Checking out $releaseBranch...${NC}\n"
-git checkout $releaseBranch
-git pull origin $releaseBranch
-
 # find release version: if no args we grab gradle.properties without -SNAPSHOT
 if [ -z "$1" ]
   then
@@ -73,9 +62,20 @@ else
 fi
 echo $releaseVersion | grep -q "[0-9].[0-9].[0-9]$"
 if [ ! $? -eq 0 ] ;then
-    printf "${RED}Wrong version format (X.X.X) for $releaseVersion${NC}\n" 
+    printf "${RED}Wrong version format (X.X.X) for: $releaseVersion${NC}\n" 
     exit
 fi
+
+originalBranch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
+releaseBranch=master
+docBranch=gh-pages
+
+mv ~/.gradle/gradle.properties.bak ~/.gradle/gradle.properties
+
+# checkout release branch
+printf "${YELLOW}Checking out $releaseBranch...${NC}\n"
+git checkout $releaseBranch
+git pull origin $releaseBranch
 
 # find next snapshot version by incrementing the release version
 nextSnapshotVersion=$(echo $releaseVersion | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}')-SNAPSHOT

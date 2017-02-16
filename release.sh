@@ -152,11 +152,10 @@ printf '[....]\n\n\n'
 
 read -r -p "Does this look right to you? [y/n]: " key
 if [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-    printf '\n\n'
     git commit -am "Update master with next snasphot version $nextSnapshotVersion"
     git push origin master
 else
-    printf "\n${ORANGE}Reverting.... Make sure to update this manually.${NC}\n"
+    printf "${ORANGE}Make sure to update gradle.properties manually.${NC}\n"
     restoreFiles
 fi
 

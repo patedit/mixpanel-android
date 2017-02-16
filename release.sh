@@ -131,7 +131,7 @@ git tag $newTag
 git push origin $newTag
 
 # update next snapshot version
-printf "\n{YELLOW}Updating next snapshot version...${NC}\n"
+printf "\n${YELLOW}Updating next snapshot version...${NC}\n"
 sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$nextSnapshotVersion',' gradle.properties
 printf "${GREEN}New gradle.properties:${NC}\n"
 head -n 1 gradle.properties

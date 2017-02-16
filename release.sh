@@ -19,6 +19,9 @@ if [ ! -f ~/.gradle/gradle.properties.bak ]; then
     echo "~/.gradle/gradle.properties.bak was not found" 
     exit
 fi
+if [[ -z $(git status -s) ]]; then
+    echo "hi"
+fi
 
 abort () {
     restoreFiles

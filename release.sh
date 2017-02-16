@@ -71,8 +71,11 @@ if [ -z "$1" ]
 else
     releaseVersion=$1
 fi
-
-# TODO validate releaseVersion
+echo $releaseVersion | grep -q "[0-9].[0-9].[0-9]$"
+if [ ! $? -eq 0 ] ;then
+    printf "${RED}Wrong version format (X.X.X) for $releaseVersion${NC}\n" 
+    exit
+fi
 
 # find next snapshot version by incrementing the release version
 nextSnapshotVersion=$(echo $releaseVersion | awk -F. -v OFS=. 'NF==1{print ++$NF}; NF>1{if(length($NF+1)>length($NF))$(NF-1)++; $NF=sprintf("%0*d", length($NF), ($NF+1)%(10^length($NF))); print}')-SNAPSHOT

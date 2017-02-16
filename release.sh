@@ -150,11 +150,12 @@ fi
 cleanUp
 
 # update documentation
-printf "\n\n${YELLOW}Updating documentation...\n\n"
+printf "\n\n${YELLOW}Updating documentation...${NC}\n\n"
 git checkout $docBranch
 git pull origin $docBranch
 cp -r build/docs/javadoc/* .
-git commit -am "Update documentation for $releaseVersion"
+git add .
+git commit -m "Update documentation for $releaseVersion"
 git push origin gh-pages
 
 printf "\n${GREEN}All done!\n"

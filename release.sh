@@ -9,6 +9,7 @@
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
+ORANGE='\033[0;33m'
 NC='\033[0m'
 
 if [ ! -f gradle.properties ]; then
@@ -155,7 +156,7 @@ if [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
     git commit -am "Update master with next snasphot version $nextSnapshotVersion"
     git push origin master
 else
-    printf "\nReverting.... Make sure to update this manually.\n"
+    printf "\n${ORANGE}Reverting.... Make sure to update this manually.${NC}\n"
     restoreFiles
 fi
 

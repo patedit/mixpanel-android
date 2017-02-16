@@ -62,7 +62,8 @@ else
 fi
 echo $releaseVersion | grep -q "[0-9].[0-9].[0-9]$"
 if [ ! $? -eq 0 ] ;then
-    printf "${RED}Wrong version format (X.X.X) for: $releaseVersion${NC}\n" 
+    printf "${RED}Wrong version format (X.X.X) for: $releaseVersion\n"
+    printf "Check your gradle.properties file or the arguments you are passing.${NC}\n"
     exit
 fi
 

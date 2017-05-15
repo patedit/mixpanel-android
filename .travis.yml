@@ -17,6 +17,9 @@ env:
    # install timeout in minutes (2 minutes by default)
     - ADB_INSTALL_TIMEOUT=8
 
+before_install:
+  - adb logcat > logcat.log &
+
 # Emulator Management: Create, Start and Wait
 before_script:
   - echo no | android create avd --force -n mp --target android-19 --abi armeabi-v7a
@@ -24,7 +27,6 @@ before_script:
   - android-wait-for-emulator
   - adb shell input keyevent 82 &
   - adb shell input keyevent 1 &
-  - adb -e logcat *:W | tee logcat.log > /dev/null 2>&1 &
 
 script:
   - android list target
@@ -33,12 +35,4 @@ script:
   - ./gradlew --info androidJavadocs
 
 after_failure:
-  - sudo apt-get install -qq lynx
-  - export MOD_NAME=mixpanel-android
-  - export LOG_DIR=${TRAVIS_BUILD_DIR}/${MOD_NAME}/build/outputs/reports/androidTests/connected/
-  - lynx --dump ${LOG_DIR}com.android.builder.testing.ConnectedDevice.html > myConnectedDevice.log
-  - lynx --dump ${LOG_DIR}com.android.builder.testing.html > myTesting.log
-  - for file in *.log; do echo "$file"; echo "====================="; cat "$file"; done || true
-
-after_script:
-  - echo " LOGCAT "; echo "========"; cat logcat.log; pkill -KILL -f adb
+  - cat logcat.log

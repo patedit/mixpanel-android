@@ -204,8 +204,11 @@ public class HttpTest extends AndroidTestCase {
         waitForFlushInternval();
         Log.e("SERGIO", "Just waited!");
         assertEquals(SUCCEED_TEXT, mPerformRequestCalls.poll(POLL_WAIT_MAX_MILLISECONDS, DEFAULT_TIMEUNIT));
+        Log.e("SERGIO", "Everything is good 1!");
         assertEquals(null, mPerformRequestCalls.poll());
+        Log.e("SERGIO", "Everything is good 2!");
         assertEquals(1, mCleanupCalls.size());
+        Log.e("SERGIO", "Everything is good 3!");
     }
 
     public void runIOException() throws InterruptedException {

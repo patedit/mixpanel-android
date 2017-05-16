@@ -264,7 +264,7 @@ import com.mixpanel.android.util.MPLog;
             // otherwise unusable DB. Better to bomb it and get back on track
             // than to leave it junked up (and maybe filling up the disk.)
             mDb.deleteDatabase();
-        } finally {1
+        } finally {
             mDb.close();
         }
     }

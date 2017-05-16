@@ -57,7 +57,7 @@ public class HttpTest extends AndroidTestCase {
             public byte[] performRequest(String endpointUrl, Map<String, Object> params, SSLSocketFactory socketFactory)
                     throws ServiceUnavailableException, IOException {
                 try {
-                    Log.e("SERGIO", "performRequest called " + endpointUrl);
+                    Log.e("SERGIO", "performRequest (" + Thread.currentThread().getId()+") called " + endpointUrl);
                     if (null == params) {
                         mDecideCalls.put(endpointUrl);
 
@@ -198,8 +198,9 @@ public class HttpTest extends AndroidTestCase {
 
     public void runBasicSucceed() throws InterruptedException {
         mCleanupCalls.clear();
+        Log.e("SERGIO", "Going to track! " + Thread.currentThread().getId());
         mMetrics.track(SUCCEED_TEXT, null);
-        Log.e("SERGIO", "Just tracked!");
+        Log.e("SERGIO", "Just tracked! " + Thread.currentThread().getId());
         waitForFlushInternval();
         Log.e("SERGIO", "Just waited!");
         assertEquals(SUCCEED_TEXT, mPerformRequestCalls.poll(POLL_WAIT_MAX_MILLISECONDS, DEFAULT_TIMEUNIT));

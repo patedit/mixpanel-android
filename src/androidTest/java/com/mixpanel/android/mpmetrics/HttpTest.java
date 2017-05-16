@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.test.AndroidTestCase;
+import android.util.Log;
 
 import com.mixpanel.android.util.Base64Coder;
 import com.mixpanel.android.util.RemoteService;
@@ -56,6 +57,7 @@ public class HttpTest extends AndroidTestCase {
             public byte[] performRequest(String endpointUrl, Map<String, Object> params, SSLSocketFactory socketFactory)
                     throws ServiceUnavailableException, IOException {
                 try {
+                    Log.e("SERGIO", "performRequest called " + endpointUrl);
                     if (null == params) {
                         mDecideCalls.put(endpointUrl);
 
@@ -78,6 +80,7 @@ public class HttpTest extends AndroidTestCase {
                     }
                     assertTrue(params.containsKey("data"));
 
+                    Log.e("SERGIO", "performRequest called part 2" + endpointUrl);
                     final Object obj = mFlushResults.remove(0);
                     if (obj instanceof IOException) {
                         throw (IOException)obj;
@@ -93,7 +96,7 @@ public class HttpTest extends AndroidTestCase {
                     JSONArray msg = new JSONArray(jsonData);
                     JSONObject event = msg.getJSONObject(0);
                     mPerformRequestCalls.put(event.getString("event"));
-
+                    Log.e("SERGIO", "performRequest called part 3" + endpointUrl);
                     return (byte[])obj;
                 } catch (JSONException e) {
                     throw new RuntimeException("Malformed data passed to test mock", e);
@@ -196,7 +199,9 @@ public class HttpTest extends AndroidTestCase {
     public void runBasicSucceed() throws InterruptedException {
         mCleanupCalls.clear();
         mMetrics.track(SUCCEED_TEXT, null);
+        Log.e("SERGIO", "Just tracked!");
         waitForFlushInternval();
+        Log.e("SERGIO", "Just waited!");
         assertEquals(SUCCEED_TEXT, mPerformRequestCalls.poll(POLL_WAIT_MAX_MILLISECONDS, DEFAULT_TIMEUNIT));
         assertEquals(null, mPerformRequestCalls.poll());
         assertEquals(1, mCleanupCalls.size());

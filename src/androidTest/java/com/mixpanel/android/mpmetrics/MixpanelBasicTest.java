@@ -39,10 +39,10 @@ public class MixpanelBasicTest extends AndroidTestCase {
     protected void setUp() throws Exception {
         Log.e("SERGIO", "Setting up test!!!!!!");
         mMockPreferences = new TestUtils.EmptyPreferences(getContext());
-//        AnalyticsMessages messages = AnalyticsMessages.getInstance(getContext());
+        AnalyticsMessages messages = AnalyticsMessages.getInstance(getContext());
 //        messages.createWorker();
-//        messages.hardKill();
-//        Thread.sleep(500);
+        messages.hardKill();
+        Thread.sleep(2000);
 
         try {
             SystemInformation systemInformation = new SystemInformation(mContext);

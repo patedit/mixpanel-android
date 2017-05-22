@@ -344,17 +344,19 @@ public class AutomaticEventsTest extends AndroidTestCase {
             }
         };
 
-        mLatch.await(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS);
+        assertTrue(mLatch.await(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
         assertEquals(initialCalls, mTrackedEvents);
 
         assertTrue(secondLatch.await(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
 
-        assertEquals(AutomaticEvents.FIRST_OPEN, mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
-        assertEquals(AutomaticEvents.APP_UPDATED, mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
+        Thread.sleep(500);
 
         for (int i = 0; i < MPConfig.getInstance(getContext()).getBulkUploadLimit() - initialCalls; i++) {
             mCleanMixpanelAPI.track("Track event " + i);
         }
+
+        assertEquals(AutomaticEvents.FIRST_OPEN, mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
+        assertEquals(AutomaticEvents.APP_UPDATED, mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
 
         for (int i = 0; i < MPConfig.getInstance(getContext()).getBulkUploadLimit() - initialCalls; i++) {
             assertEquals("Track event " + i, mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));

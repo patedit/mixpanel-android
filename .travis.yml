@@ -18,7 +18,7 @@ env:
     - ADB_INSTALL_TIMEOUT=8
 
 before_install:
-  - adb -e logcat *:W > logcat.log &
+  - adb logcat > logcat.log &
 
 # Emulator Management: Create, Start and Wait
 before_script:

@@ -607,7 +607,9 @@ public class MixpanelBasicTest extends AndroidTestCase {
         final AnalyticsMessages listener = new AnalyticsMessages(getContext()) {
             @Override
             public void eventsMessage(EventDescription heard) {
-                throw new RuntimeException("Should not be called during this test");
+                if (!heard.isAutomatic()) {
+                    throw new RuntimeException("Should not be called during this test");
+                }
             }
 
             @Override
@@ -676,7 +678,9 @@ public class MixpanelBasicTest extends AndroidTestCase {
         final AnalyticsMessages listener = new AnalyticsMessages(getContext()) {
             @Override
             public void eventsMessage(EventDescription heard) {
-                messages.add(heard);
+                if (!heard.isAutomatic()) {
+                    messages.add(heard);
+                }
             }
 
             @Override

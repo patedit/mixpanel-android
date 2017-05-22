@@ -42,6 +42,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
     private boolean mCanRunDecide;
     private boolean mCanRunSecondDecideInstance;
     private MPDbAdapter mockAdapter;
+    private CountDownLatch mMinRequestsLatch;
 
     @Override
     protected void setUp() throws Exception {
@@ -51,6 +52,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
         mMockReferrerPreferences = new TestUtils.EmptyPreferences(getContext());
         mTrackedEvents = 0;
         mCanRunDecide = true;
+        mMinRequestsLatch = new CountDownLatch(2); // First Time Open and Update
         final RemoteService mockPoster = new HttpService() {
             @Override
             public byte[] performRequest(String endpointUrl, Map<String, Object> params, SSLSocketFactory socketFactory)
@@ -69,6 +71,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
                     JSONArray jsonArray = new JSONArray(jsonData);
                     for (int i = 0; i < jsonArray.length(); i++) {
                         mPerformRequestEvents.put(jsonArray.getJSONObject(i).getString("event"));
+                        mMinRequestsLatch.countDown();
                         Log.d("SERGIO", "Adding new request event " + jsonArray.getJSONObject(i).toString());
                     }
                     return TestUtils.bytes("1\n");
@@ -166,6 +169,13 @@ public class AutomaticEventsTest extends AndroidTestCase {
         };
     }
 
+    @Override
+    protected void tearDown() throws Exception {
+        Log.d("SERGIO", "========================== tearDown");
+        mMinRequestsLatch.await(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS);
+        super.tearDown();
+    }
+
     public void testAutomaticEvents() throws InterruptedException {
         Log.d("SERGIO", "====================== testAutomaticEvents");
         int calls = 3; // First Time Open, App Update, An Event One
@@ -178,12 +188,6 @@ public class AutomaticEventsTest extends AndroidTestCase {
         assertEquals(AutomaticEvents.APP_UPDATED, mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
         assertEquals("An event One", mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
         assertEquals(null, mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        Log.d("SERGIO", "========================== tearDown");
-        super.tearDown();
     }
 
     public void testNoDecideResponse() throws InterruptedException {

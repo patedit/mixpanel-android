@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.test.AndroidTestCase;
+import android.util.Log;
 
 import com.mixpanel.android.util.Base64Coder;
 import com.mixpanel.android.util.HttpService;
@@ -45,6 +46,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
+        Log.d("SERGIO", "====================== setUp");
         mPerformRequestEvents = new LinkedBlockingQueue<>();
         mMockReferrerPreferences = new TestUtils.EmptyPreferences(getContext());
         mTrackedEvents = 0;
@@ -67,6 +69,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
                     JSONArray jsonArray = new JSONArray(jsonData);
                     for (int i = 0; i < jsonArray.length(); i++) {
                         mPerformRequestEvents.put(jsonArray.getJSONObject(i).getString("event"));
+                        Log.d("SERGIO", "Adding new request event " + jsonArray.getJSONObject(i).toString());
                     }
                     return TestUtils.bytes("1\n");
                 } catch (JSONException e) {
@@ -164,6 +167,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
     }
 
     public void testAutomaticEvents() throws InterruptedException {
+        Log.d("SERGIO", "====================== testAutomaticEvents");
         int calls = 3; // First Time Open, App Update, An Event One
         mLatch = new CountDownLatch(calls);
         mCleanMixpanelAPI.track("An event One");
@@ -174,6 +178,12 @@ public class AutomaticEventsTest extends AndroidTestCase {
         assertEquals(AutomaticEvents.APP_UPDATED, mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
         assertEquals("An event One", mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
         assertEquals(null, mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        Log.d("SERGIO", "========================== tearDown");
+        super.tearDown();
     }
 
     public void testNoDecideResponse() throws InterruptedException {

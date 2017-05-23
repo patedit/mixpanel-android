@@ -34,7 +34,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
     private MixpanelAPI mCleanMixpanelAPI;
     private static final String TOKEN = "Automatic Events Token";
     private static final int MAX_TIMEOUT_POLL = 6500;
-    private BlockingQueue<String> mPerformRequestEvents;
+    final private BlockingQueue<String> mPerformRequestEvents = new LinkedBlockingQueue<>();
     private Future<SharedPreferences> mMockReferrerPreferences;
     private byte[] mDecideResponse;
     private int mTrackedEvents;
@@ -49,7 +49,6 @@ public class AutomaticEventsTest extends AndroidTestCase {
         super.setUp();
         Log.d("SERGIO" , "================================ setUp");
 
-        mPerformRequestEvents = new LinkedBlockingQueue<>();
         mMockReferrerPreferences = new TestUtils.EmptyPreferences(getContext());
         mTrackedEvents = 0;
         mCanRunDecide = true;
@@ -179,6 +178,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
         Log.d("SERGIO" , "================================ tearDown");
         mMinRequestsLatch.await(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS);
         super.tearDown();
+        mPerformRequestEvents.clear();
     }
 
     public void testAutomaticEvents() throws InterruptedException {

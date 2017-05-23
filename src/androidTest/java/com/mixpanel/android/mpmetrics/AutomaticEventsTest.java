@@ -48,6 +48,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
     protected void setUp() throws Exception {
         super.setUp();
         Log.d("SERGIO" , "================================ setUp");
+
         mPerformRequestEvents = new LinkedBlockingQueue<>();
         mMockReferrerPreferences = new TestUtils.EmptyPreferences(getContext());
         mTrackedEvents = 0;
@@ -75,6 +76,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
                         Log.d("SERGIO" , "Adding " + jsonArray.getJSONObject(i).getString("event"));
                         mPerformRequestEvents.put(jsonArray.getJSONObject(i).getString("event"));
                         mMinRequestsLatch.countDown();
+                        Log.d("SERGIO", "Adding new request event " + jsonArray.getJSONObject(i).toString());
                     }
                     return TestUtils.bytes("1\n");
                 } catch (JSONException e) {
@@ -180,6 +182,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
     }
 
     public void testAutomaticEvents() throws InterruptedException {
+        Log.d("SERGIO", "====================== testAutomaticEvents");
         int calls = 3; // First Time Open, App Update, An Event One
         mLatch = new CountDownLatch(calls);
         mCleanMixpanelAPI.track("An event One");
@@ -353,18 +356,19 @@ public class AutomaticEventsTest extends AndroidTestCase {
             }
         };
 
-        mLatch.await(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS);
+        assertTrue(mLatch.await(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
         assertEquals(initialCalls, mTrackedEvents);
 
         assertTrue(secondLatch.await(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
 
-        Thread.sleep(1000);
+        Thread.sleep(500);
         for (int i = 0; i < MPConfig.getInstance(getContext()).getBulkUploadLimit() - initialCalls; i++) {
             mCleanMixpanelAPI.track("Track event " + i);
         }
 
         assertEquals(AutomaticEvents.FIRST_OPEN, mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
         assertEquals(AutomaticEvents.APP_UPDATED, mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
+
         for (int i = 0; i < MPConfig.getInstance(getContext()).getBulkUploadLimit() - initialCalls; i++) {
             assertEquals("Track event " + i, mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
         }

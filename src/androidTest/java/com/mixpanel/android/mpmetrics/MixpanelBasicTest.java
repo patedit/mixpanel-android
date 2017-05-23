@@ -37,8 +37,10 @@ public class MixpanelBasicTest extends AndroidTestCase {
 
     @Override
     protected void setUp() throws Exception {
+        Log.e("SERGIO", "Setting up test!!!!!!");
         mMockPreferences = new TestUtils.EmptyPreferences(getContext());
         AnalyticsMessages messages = AnalyticsMessages.getInstance(getContext());
+//        messages.createWorker();
         messages.hardKill();
         Thread.sleep(2000);
 
@@ -514,7 +516,7 @@ public class MixpanelBasicTest extends AndroidTestCase {
         MixpanelAPI metrics = new TestUtils.CleanMixpanelAPI(getContext(), mMockPreferences, "Test Message Queuing") {
             @Override
             protected AnalyticsMessages getAnalyticsMessages() {
-                 return listener;
+                return listener;
             }
         };
 
@@ -623,7 +625,7 @@ public class MixpanelBasicTest extends AndroidTestCase {
 
             @Override
             protected AnalyticsMessages getAnalyticsMessages() {
-                 return listener;
+                return listener;
             }
         }
 
@@ -708,7 +710,7 @@ public class MixpanelBasicTest extends AndroidTestCase {
 
             @Override
             protected AnalyticsMessages getAnalyticsMessages() {
-                 return listener;
+                return listener;
             }
         }
 
@@ -920,7 +922,7 @@ public class MixpanelBasicTest extends AndroidTestCase {
         MixpanelAPI metrics = new TestUtils.CleanMixpanelAPI(getContext(), mMockPreferences, "Test Message Queuing") {
             @Override
             protected AnalyticsMessages getAnalyticsMessages() {
-                 return listener;
+                return listener;
             }
         };
 

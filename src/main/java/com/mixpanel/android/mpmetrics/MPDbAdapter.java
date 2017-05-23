@@ -302,7 +302,7 @@ import com.mixpanel.android.util.MPLog;
         cleanupAutomaticEvents(Table.PEOPLE, token);
     }
 
-    private void cleanupAutomaticEvents(Table table, String token) {
+    private synchronized void cleanupAutomaticEvents(Table table, String token) {
         final String tableName = table.getName();
 
         try {

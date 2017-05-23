@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.test.AndroidTestCase;
+import android.util.Log;
 
 import com.mixpanel.android.util.Base64Coder;
 import com.mixpanel.android.util.HttpService;
@@ -46,6 +47,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
+        Log.d("SERGIO" , "================================ setUp");
         mPerformRequestEvents = new LinkedBlockingQueue<>();
         mMockReferrerPreferences = new TestUtils.EmptyPreferences(getContext());
         mTrackedEvents = 0;
@@ -58,8 +60,10 @@ public class AutomaticEventsTest extends AndroidTestCase {
 
                 if (null == params) {
                     if (mDecideResponse == null) {
+                        Log.d("SERGIO", "Returning automatic events: true");
                         return TestUtils.bytes("{\"notifications\":[], \"automatic_events\": true}");
                     }
+                    Log.d("SERGIO", "Returning automatic events: " + mDecideResponse);
                     return mDecideResponse;
                 }
 
@@ -68,6 +72,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
                 try {
                     JSONArray jsonArray = new JSONArray(jsonData);
                     for (int i = 0; i < jsonArray.length(); i++) {
+                        Log.d("SERGIO" , "Adding " + jsonArray.getJSONObject(i).getString("event"));
                         mPerformRequestEvents.put(jsonArray.getJSONObject(i).getString("event"));
                         mMinRequestsLatch.countDown();
                     }
@@ -127,6 +132,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
                                 return new DecideChecker(mContext, mConfig, new SystemInformation(mContext)) {
                                     @Override
                                     public void runDecideCheck(String token, RemoteService poster) throws RemoteService.ServiceUnavailableException {
+                                        Log.d("SERGIO", "Running decideCheck: " + mCanRunDecide);
                                         if (mCanRunDecide) {
                                             super.runDecideCheck(token, poster);
                                         }
@@ -168,6 +174,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
 
     @Override
     protected void tearDown() throws Exception {
+        Log.d("SERGIO" , "================================ tearDown");
         mMinRequestsLatch.await(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS);
         super.tearDown();
     }
@@ -186,6 +193,7 @@ public class AutomaticEventsTest extends AndroidTestCase {
     }
 
     public void testNoDecideResponse() throws InterruptedException {
+        Log.d("SERGIO", "========================= testNoDecideRepsponse");
         mCanRunDecide = false;
         mDecideResponse = TestUtils.bytes("{\"notifications\":[], \"automatic_events\": true}");
 
@@ -202,10 +210,13 @@ public class AutomaticEventsTest extends AndroidTestCase {
 
         mCanRunDecide = true;
         mCleanMixpanelAPI.track("Automatic Event", null, true);
+        Log.d("SERGIO" , "Going to FLUSH!!");
         mCleanMixpanelAPI.flush();
         assertEquals(null, mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));
 
         Thread.sleep(2000);
+        Log.d("SERGIO" , "Going to FLUSH AGAIN!!");
+
         mCleanMixpanelAPI.flush();
 
         assertEquals(AutomaticEvents.FIRST_OPEN, mPerformRequestEvents.poll(MAX_TIMEOUT_POLL, TimeUnit.MILLISECONDS));

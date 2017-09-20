@@ -15,7 +15,7 @@ group = GROUP
 version = VERSION_NAME
 
 android {
-    compileSdkVersion 24
+    compileSdkVersion 26
     buildToolsVersion '24.0.3'
 
     compileOptions {
@@ -25,7 +25,7 @@ android {
 
     defaultConfig {
         minSdkVersion 9
-        targetSdkVersion 23
+        targetSdkVersion 26
         testApplicationId "com.mixpanel.android.mpmetrics"
         testInstrumentationRunner "android.test.InstrumentationTestRunner"
         consumerProguardFiles 'proguard.txt'

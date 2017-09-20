@@ -5,12 +5,12 @@ android:
   components:
     - tools
     - platform-tools
-    - build-tools-24.0.3
-    - android-24
+    - build-tools-26.0.1
+    - android-26
     - extra-google-google_play_services
     - extra-android-m2repository
     - extra-google-m2repository
-    - sys-img-armeabi-v7a-android-19
+    - sys-img-armeabi-v7a-android-26
 
 env:
   global:
@@ -19,7 +19,7 @@ env:
 
 # Emulator Management: Create, Start and Wait
 before_script:
-  - echo no | android create avd --force -n mp --target android-19 --abi armeabi-v7a
+  - echo no | android create avd --force -n mp --target android-26 --abi armeabi-v7a
   - emulator -avd mp -noskin -no-boot-anim -no-window &
   - android-wait-for-emulator
   - adb shell input keyevent 82 &

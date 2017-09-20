@@ -19,6 +19,7 @@ env:
 
 # Emulator Management: Create, Start and Wait
 before_script:
+  - android list target
   - echo no | android create avd --force -n mp --target android-26 --abi "default/x86"
   - emulator -avd mp -noskin -no-boot-anim -no-window &
   - android-wait-for-emulator

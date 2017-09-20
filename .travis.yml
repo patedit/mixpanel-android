@@ -14,14 +14,13 @@ android:
   components:
     - tools
     - platform-tools
-    - tools
     - build-tools-$ANDROID_BUILD_TOOLS_VERSION
     - android-$ANDROID_API_LEVEL
     - android-$EMULATOR_API_LEVEL
     - extra-google-google_play_services
     - extra-android-m2repository
     - extra-google-m2repository
-    - sys-img-armeabi-v7a-$EMULATOR_API_LEVEL
+    - sys-img-armeabi-v7a-android-$EMULATOR_API_LEVEL
 
 # Emulator Management: Create, Start and Wait
 before_script:

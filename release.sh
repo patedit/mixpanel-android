@@ -101,13 +101,8 @@ if [ ! -s changes.txt ]; then
 fi
 
 printf "\n"
-printf "${GREEN}New gradle.properties:${NC}\n"
-head -n 1 gradle.properties
-printf '[....]\n\n\n'
-
-printf "${GREEN}New README.md:${NC}\n"
-head -n 9 README.md
-printf '[....]\n\n\n'
+git --no-pager diff
+printf "\n\n\n"
 
 read -r -p "Does this look right to you? [y/n]: " key
 
@@ -116,7 +111,7 @@ if ! [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
     abort
 fi
 
-# remove backup file
+# remove backup files
 cleanUp
 
 # upload library to maven
@@ -146,9 +141,8 @@ git push origin $newTag
 # update next snapshot version
 printf "\n${YELLOW}Updating next snapshot version...${NC}\n"
 sed -i.bak 's,^\(VERSION_NAME=\).*,\1'$nextSnapshotVersion',' gradle.properties
-printf "${GREEN}New gradle.properties:${NC}\n"
-head -n 1 gradle.properties
-printf '[....]\n\n\n'
+git --no-pager diff
+printf '\n\n\n'
 
 read -r -p "Does this look right to you? [y/n]: " key
 if [[ "$key" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
@@ -159,6 +153,7 @@ else
     restoreFiles
 fi
 
+# remove backup files
 cleanUp
 
 # update documentation

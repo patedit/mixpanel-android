@@ -23,33 +23,48 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import javax.net.ssl.SSLSocketFactory;
 
 /* package */ class DecideChecker {
+    private static final String LOGTAG = "MixpanelAPI.DChecker";
+
+    private final MPConfig mConfig;
+    private final Context mContext;
+    private final Map<String, DecideMessages> mChecks;
+    private final ImageStore mImageStore;
+    private final SystemInformation mSystemInformation;
+
+    private static final JSONArray EMPTY_JSON_ARRAY = new JSONArray();
+
+    private static final String NOTIFICATIONS = "notifications";
+    private static final String EVENT_BINDINGS = "event_bindings";
+    private static final String VARIANTS = "variants";
+    private static final String AUTOMATIC_EVENTS = "automatic_events";
 
     /* package */ static class Result {
         public Result() {
-            surveys = new ArrayList<>();
             notifications = new ArrayList<>();
             eventBindings = EMPTY_JSON_ARRAY;
             variants = EMPTY_JSON_ARRAY;
+            automaticEvents = false;
         }
 
-        @Deprecated
-        public final List<Survey> surveys;
         public final List<InAppNotification> notifications;
         public JSONArray eventBindings;
         public JSONArray variants;
+        public boolean automaticEvents;
     }
 
     public DecideChecker(final Context context, final MPConfig config, final SystemInformation systemInformation) {
         mContext = context;
         mConfig = config;
-        mChecks = new LinkedList<DecideMessages>();
+        mChecks = new HashMap<String, DecideMessages>();
         mImageStore = createImageStore(context);
         mSystemInformation = systemInformation;
     }
@@ -59,17 +74,16 @@ import javax.net.ssl.SSLSocketFactory;
     }
 
     public void addDecideCheck(final DecideMessages check) {
-        mChecks.add(check);
+        mChecks.put(check.getToken(), check);
     }
 
-    public void runDecideChecks(final RemoteService poster) throws RemoteService.ServiceUnavailableException {
-        final Iterator<DecideMessages> itr = mChecks.iterator();
-        while (itr.hasNext()) {
-            final DecideMessages updates = itr.next();
+    public void runDecideCheck(final String token, final RemoteService poster) throws RemoteService.ServiceUnavailableException {
+        DecideMessages updates = mChecks.get(token);
+        if (updates != null) {
             final String distinctId = updates.getDistinctId();
             try {
                 final Result result = runDecideCheck(updates.getToken(), distinctId, poster);
-                updates.reportResults(result.surveys, result.notifications, result.eventBindings, result.variants);
+                updates.reportResults(result.notifications, result.eventBindings, result.variants, result.automaticEvents);
             } catch (final UnintelligibleMessageException e) {
                 MPLog.e(LOGTAG, e.getMessage(), e);
             }
@@ -123,33 +137,10 @@ import javax.net.ssl.SSLSocketFactory;
             throw new UnintelligibleMessageException(message, e);
         }
 
-        JSONArray surveys = null;
-        if (response.has("surveys")) {
-            try {
-                surveys = response.getJSONArray("surveys");
-            } catch (final JSONException e) {
-                MPLog.e(LOGTAG, "Mixpanel endpoint returned non-array JSON for surveys: " + response);
-            }
-        }
-
-        if (null != surveys) {
-            for (int i = 0; i < surveys.length(); i++) {
-                try {
-                    final JSONObject surveyJson = surveys.getJSONObject(i);
-                    final Survey survey = new Survey(surveyJson);
-                    ret.surveys.add(survey);
-                } catch (final JSONException e) {
-                    MPLog.e(LOGTAG, "Received a strange response from surveys service: " + surveys.toString());
-                } catch (final BadDecideObjectException e) {
-                    MPLog.e(LOGTAG, "Received a strange response from surveys service: " + surveys.toString());
-                }
-            }
-        }
-
         JSONArray notifications = null;
-        if (response.has("notifications")) {
+        if (response.has(NOTIFICATIONS)) {
             try {
-                notifications = response.getJSONArray("notifications");
+                notifications = response.getJSONArray(NOTIFICATIONS);
             } catch (final JSONException e) {
                 MPLog.e(LOGTAG, "Mixpanel endpoint returned non-array JSON for notifications: " + response);
             }
@@ -179,19 +170,27 @@ import javax.net.ssl.SSLSocketFactory;
             }
         }
 
-        if (response.has("event_bindings")) {
+        if (response.has(EVENT_BINDINGS)) {
             try {
-                ret.eventBindings = response.getJSONArray("event_bindings");
+                ret.eventBindings = response.getJSONArray(EVENT_BINDINGS);
             } catch (final JSONException e) {
                 MPLog.e(LOGTAG, "Mixpanel endpoint returned non-array JSON for event bindings: " + response);
             }
         }
 
-        if (response.has("variants")) {
+        if (response.has(VARIANTS)) {
             try {
-                ret.variants = response.getJSONArray("variants");
+                ret.variants = response.getJSONArray(VARIANTS);
             } catch (final JSONException e) {
                 MPLog.e(LOGTAG, "Mixpanel endpoint returned non-array JSON for variants: " + response);
+            }
+        }
+
+        if (response.has(AUTOMATIC_EVENTS)) {
+            try {
+                ret.automaticEvents = response.getBoolean(AUTOMATIC_EVENTS);
+            } catch (JSONException e) {
+                MPLog.e(LOGTAG, "Mixpanel endpoint returned a non boolean value for automatic events: " + response);
             }
         }
 
@@ -236,20 +235,11 @@ import javax.net.ssl.SSLSocketFactory;
         }
 
         final String checkQuery = queryBuilder.toString();
-        final String[] urls;
-        if (mConfig.getDisableFallback()) {
-            urls = new String[]{mConfig.getDecideEndpoint() + checkQuery};
-        } else {
-            urls = new String[]{mConfig.getDecideEndpoint() + checkQuery,
-                    mConfig.getDecideFallbackEndpoint() + checkQuery};
-        }
+        final String url = mConfig.getDecideEndpoint() + checkQuery;
 
-        MPLog.v(LOGTAG, "Querying decide server, urls:");
-        for (int i = 0; i < urls.length; i++) {
-            MPLog.v(LOGTAG, "    >> " + urls[i]);
-        }
+        MPLog.v(LOGTAG, "Querying decide server, url: " + url);
 
-        final byte[] response = getUrls(poster, mContext, urls);
+        final byte[] response = checkDecide(poster, mContext, url);
         if (null == response) {
             return null;
         }
@@ -295,7 +285,7 @@ import javax.net.ssl.SSLSocketFactory;
         }
     }
 
-    private static byte[] getUrls(RemoteService poster, Context context, String[] urls)
+    private static byte[] checkDecide(RemoteService poster, Context context, String url)
         throws RemoteService.ServiceUnavailableException {
         final MPConfig config = MPConfig.getInstance(context);
 
@@ -304,33 +294,23 @@ import javax.net.ssl.SSLSocketFactory;
         }
 
         byte[] response = null;
-        for (String url : urls) {
-            try {
-                final SSLSocketFactory socketFactory = config.getSSLSocketFactory();
-                response = poster.performRequest(url, null, socketFactory);
-                break;
-            } catch (final MalformedURLException e) {
-                MPLog.e(LOGTAG, "Cannot interpret " + url + " as a URL.", e);
-            } catch (final FileNotFoundException e) {
-                MPLog.v(LOGTAG, "Cannot get " + url + ", file not found.", e);
-            } catch (final IOException e) {
-                MPLog.v(LOGTAG, "Cannot get " + url + ".", e);
-            } catch (final OutOfMemoryError e) {
-                MPLog.e(LOGTAG, "Out of memory when getting to " + url + ".", e);
-                break;
-            }
+        try {
+            final SSLSocketFactory socketFactory = config.getSSLSocketFactory();
+            response = poster.performRequest(url, null, socketFactory);
+        } catch (final MalformedURLException e) {
+            MPLog.e(LOGTAG, "Cannot interpret " + url + " as a URL.", e);
+        } catch (final FileNotFoundException e) {
+            MPLog.v(LOGTAG, "Cannot get " + url + ", file not found.", e);
+        } catch (final IOException e) {
+            MPLog.v(LOGTAG, "Cannot get " + url + ".", e);
+        } catch (final OutOfMemoryError e) {
+            MPLog.e(LOGTAG, "Out of memory when getting to " + url + ".", e);
         }
 
         return response;
     }
 
-    private final MPConfig mConfig;
-    private final Context mContext;
-    private final List<DecideMessages> mChecks;
-    private final ImageStore mImageStore;
-    private final SystemInformation mSystemInformation;
-
-    private static final JSONArray EMPTY_JSON_ARRAY = new JSONArray();
-
-    private static final String LOGTAG = "MixpanelAPI.DChecker";
+    public DecideMessages getDecideMessages(String token) {
+        return mChecks.get(token);
+    }
 }

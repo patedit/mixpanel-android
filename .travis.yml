@@ -23,9 +23,11 @@ android:
     - sys-img-armeabi-v7a-android-$EMULATOR_API_LEVEL
     - build-tools-24.0.3
 
+before_install:
+  - adb logcat > logcat.log &
+
 # Emulator Management: Create, Start and Wait
 before_script:
-  - android list target
   - echo no | android create avd --force -n mp --target "android-"$EMULATOR_API_LEVEL --abi $ANDROID_ABI
   - emulator -avd mp -noskin -no-boot-anim -no-window &
   - android-wait-for-emulator
@@ -34,5 +36,9 @@ before_script:
 
 script:
   - android list target
+  - ./gradlew lint
   - ./gradlew --info connectedAndroidTest
   - ./gradlew --info androidJavadocs
+
+after_failure:
+  - cat logcat.log

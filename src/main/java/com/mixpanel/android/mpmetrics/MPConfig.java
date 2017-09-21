@@ -45,9 +45,6 @@ import javax.net.ssl.SSLSocketFactory;
  *          queue based on the storage capacity of the device, but will always allow queing below this limit. Higher values
  *          will take up more storage even when user storage is very full.</dd>
  *
- *     <dt>com.mixpanel.android.MPConfig.DisableFallback</dt>
- *     <dd>A boolean value. If true, do not send data over HTTP, even if HTTPS is unavailable. Defaults to true - by default, Mixpanel will only attempt to communicate over HTTPS.</dd>
- *
  *     <dt>com.mixpanel.android.MPConfig.ResourcePackageName</dt>
  *     <dd>A string java package name. Defaults to the package name of the Application. Users should set if the package name of their R class is different from the application package name due to application id settings.</dd>
  *
@@ -61,25 +58,16 @@ import javax.net.ssl.SSLSocketFactory;
  *     <dd>A boolean value. If true, do not send an "$app_open" event when the MixpanelAPI object is created for the first time. Defaults to true - the $app_open event will not be sent by default.</dd>
  *
  *     <dt>com.mixpanel.android.MPConfig.AutoShowMixpanelUpdates</dt>
- *     <dd>A boolean value. If true, automatically show surveys, notifications, and A/B test variants. Defaults to true.</dd>
+ *     <dd>A boolean value. If true, automatically show notifications and A/B test variants. Defaults to true.</dd>
  *
  *     <dt>com.mixpanel.android.MPConfig.EventsEndpoint</dt>
  *     <dd>A string URL. If present, the library will attempt to send events to this endpoint rather than to the default Mixpanel endpoint.</dd>
  *
- *     <dt>com.mixpanel.android.MPConfig.EventsFallbackEndpoint</dt>
- *     <dd>A string URL. If present, AND if DisableFallback is false, events will be sent to this endpoint if the EventsEndpoint cannot be reached.</dd>
- *
  *     <dt>com.mixpanel.android.MPConfig.PeopleEndpoint</dt>
  *     <dd>A string URL. If present, the library will attempt to send people updates to this endpoint rather than to the default Mixpanel endpoint.</dd>
  *
- *     <dt>com.mixpanel.android.MPConfig.PeopleFallbackEndpoint</dt>
- *     <dd>A string URL. If present, AND if DisableFallback is false, people updates will be sent to this endpoint if the EventsEndpoint cannot be reached.</dd>
- *
  *     <dt>com.mixpanel.android.MPConfig.DecideEndpoint</dt>
- *     <dd>A string URL. If present, the library will attempt to get survey, notification, codeless event tracking, and A/B test variant information from this url rather than the default Mixpanel endpoint.</dd>
- *
- *     <dt>com.mixpanel.android.MPConfig.DecideFallbackEndpoint</dt>
- *     <dd>A string URL. If present, AND if DisableFallback is false, the library will query this url if the DecideEndpoint url cannot be reached.</dd>
+ *     <dd>A string URL. If present, the library will attempt to get notification, codeless event tracking, and A/B test variant information from this url rather than the default Mixpanel endpoint.</dd>
  *
  *     <dt>com.mixpanel.android.MPConfig.EditorUrl</dt>
  *     <dd>A string URL. If present, the library will attempt to connect to this endpoint when in interactive editing mode, rather than to the default Mixpanel editor url.</dd>
@@ -96,7 +84,7 @@ public class MPConfig {
     public static boolean DEBUG = false;
 
     /**
-     * Minimum API level for support of rich UI features, like Surveys, In-App notifications, and dynamic event binding.
+     * Minimum API level for support of rich UI features, like In-App notifications and dynamic event binding.
      * Devices running OS versions below this level will still support tracking and push notification features.
      */
     public static final int UI_FEATURES_MIN_API = 16;
@@ -188,11 +176,10 @@ public class MPConfig {
         mSSLSocketFactory = foundSSLFactory;
 
         DEBUG = metaData.getBoolean("com.mixpanel.android.MPConfig.EnableDebugLogging", false);
-
-        if (metaData.containsKey("com.mixpanel.android.MPConfig.AutoCheckForSurveys")) {
-            MPLog.w(LOGTAG, "com.mixpanel.android.MPConfig.AutoCheckForSurveys has been deprecated in favor of " +
-                          "com.mixpanel.android.MPConfig.AutoShowMixpanelUpdates. Please update this key as soon as possible.");
+        if (DEBUG) {
+            MPLog.setLevel(MPLog.VERBOSE);
         }
+
         if (metaData.containsKey("com.mixpanel.android.MPConfig.DebugFlushInterval")) {
             MPLog.w(LOGTAG, "We do not support com.mixpanel.android.MPConfig.DebugFlushInterval anymore. There will only be one flush interval. Please, update your AndroidManifest.xml.");
         }
@@ -201,7 +188,6 @@ public class MPConfig {
         mFlushInterval = metaData.getInt("com.mixpanel.android.MPConfig.FlushInterval", 60 * 1000); // one minute default
         mDataExpiration = metaData.getInt("com.mixpanel.android.MPConfig.DataExpiration", 1000 * 60 * 60 * 24 * 5); // 5 days default
         mMinimumDatabaseLimit = metaData.getInt("com.mixpanel.android.MPConfig.MinimumDatabaseLimit", 20 * 1024 * 1024); // 20 Mb
-        mDisableFallback = metaData.getBoolean("com.mixpanel.android.MPConfig.DisableFallback", true);
         mResourcePackageName = metaData.getString("com.mixpanel.android.MPConfig.ResourcePackageName"); // default is null
         mDisableGestureBindingUI = metaData.getBoolean("com.mixpanel.android.MPConfig.DisableGestureBindingUI", false);
         mDisableEmulatorBindingUI = metaData.getBoolean("com.mixpanel.android.MPConfig.DisableEmulatorBindingUI", false);
@@ -210,11 +196,10 @@ public class MPConfig {
         mDisableDecideChecker = metaData.getBoolean("com.mixpanel.android.MPConfig.DisableDecideChecker", false);
         mImageCacheMaxMemoryFactor = metaData.getInt("com.mixpanel.android.MPConfig.ImageCacheMaxMemoryFactor", 10);
         mIgnoreInvisibleViewsEditor = metaData.getBoolean("com.mixpanel.android.MPConfig.IgnoreInvisibleViewsVisualEditor", false);
-
-        // Disable if EITHER of these is present and false, otherwise enable
-        final boolean surveysAutoCheck = metaData.getBoolean("com.mixpanel.android.MPConfig.AutoCheckForSurveys", true);
-        final boolean mixpanelUpdatesAutoShow = metaData.getBoolean("com.mixpanel.android.MPConfig.AutoShowMixpanelUpdates", true);
-        mAutoShowMixpanelUpdates = surveysAutoCheck && mixpanelUpdatesAutoShow;
+        mAutoShowMixpanelUpdates = metaData.getBoolean("com.mixpanel.android.MPConfig.AutoShowMixpanelUpdates", true);
+        mNotificationDefaults = metaData.getInt("com.mixpanel.android.MPConfig.NotificationDefaults", 0);
+        mMinSessionDuration = metaData.getInt("com.mixpanel.android.MPConfig.MinimumSessionDuration", 10 * 1000); // 10 seconds
+        mSessionTimeoutDuration = metaData.getInt("com.mixpanel.android.MPConfig.SessionTimeoutDuration", Integer.MAX_VALUE); // no timeout by default
 
         mTestMode = metaData.getBoolean("com.mixpanel.android.MPConfig.TestMode", false);
 
@@ -224,35 +209,17 @@ public class MPConfig {
         }
         mEventsEndpoint = eventsEndpoint;
 
-        String eventsFallbackEndpoint = metaData.getString("com.mixpanel.android.MPConfig.EventsFallbackEndpoint");
-        if (null == eventsFallbackEndpoint) {
-            eventsFallbackEndpoint = "http://api.mixpanel.com/track?ip=1";
-        }
-        mEventsFallbackEndpoint = eventsFallbackEndpoint;
-
         String peopleEndpoint = metaData.getString("com.mixpanel.android.MPConfig.PeopleEndpoint");
         if (null == peopleEndpoint) {
             peopleEndpoint = "https://api.mixpanel.com/engage";
         }
         mPeopleEndpoint = peopleEndpoint;
 
-        String peopleFallbackEndpoint = metaData.getString("com.mixpanel.android.MPConfig.PeopleFallbackEndpoint");
-        if (null == peopleFallbackEndpoint) {
-            peopleFallbackEndpoint = "http://api.mixpanel.com/engage";
-        }
-        mPeopleFallbackEndpoint = peopleFallbackEndpoint;
-
         String decideEndpoint = metaData.getString("com.mixpanel.android.MPConfig.DecideEndpoint");
         if (null == decideEndpoint) {
             decideEndpoint = "https://decide.mixpanel.com/decide";
         }
         mDecideEndpoint = decideEndpoint;
-
-        String decideFallbackEndpoint = metaData.getString("com.mixpanel.android.MPConfig.DecideFallbackEndpoint");
-        if (null == decideFallbackEndpoint) {
-            decideFallbackEndpoint = "http://decide.mixpanel.com/decide";
-        }
-        mDecideFallbackEndpoint = decideFallbackEndpoint;
 
         String editorUrl = metaData.getString("com.mixpanel.android.MPConfig.EditorUrl");
         if (null == editorUrl) {
@@ -274,22 +241,21 @@ public class MPConfig {
                 "    FlushInterval " + getFlushInterval() + "\n" +
                 "    DataExpiration " + getDataExpiration() + "\n" +
                 "    MinimumDatabaseLimit " + getMinimumDatabaseLimit() + "\n" +
-                "    DisableFallback " + getDisableFallback() + "\n" +
                 "    DisableAppOpenEvent " + getDisableAppOpenEvent() + "\n" +
                 "    DisableViewCrawler " + getDisableViewCrawler() + "\n" +
-                "    DisableDeviceUIBinding " + getDisableGestureBindingUI() + "\n" +
-                "    DisableEmulatorUIBinding " + getDisableEmulatorBindingUI() + "\n" +
+                "    DisableGestureBindingUI " + getDisableGestureBindingUI() + "\n" +
+                "    DisableEmulatorBindingUI " + getDisableEmulatorBindingUI() + "\n" +
                 "    EnableDebugLogging " + DEBUG + "\n" +
                 "    TestMode " + getTestMode() + "\n" +
                 "    EventsEndpoint " + getEventsEndpoint() + "\n" +
                 "    PeopleEndpoint " + getPeopleEndpoint() + "\n" +
                 "    DecideEndpoint " + getDecideEndpoint() + "\n" +
-                "    EventsFallbackEndpoint " + getEventsFallbackEndpoint() + "\n" +
-                "    PeopleFallbackEndpoint " + getPeopleFallbackEndpoint() + "\n" +
-                "    DecideFallbackEndpoint " + getDecideFallbackEndpoint() + "\n" +
                 "    EditorUrl " + getEditorUrl() + "\n" +
                 "    DisableDecideChecker " + getDisableDecideChecker() + "\n" +
-                "    IgnoreInvisibleViewsEditor " + getIgnoreInvisibleViewsEditor() + "\n"
+                "    IgnoreInvisibleViewsEditor " + getIgnoreInvisibleViewsEditor() + "\n" +
+                "    NotificationDefaults " + getNotificationDefaults() + "\n" +
+                "    MinimumSessionDuration: " + getMinimumSessionDuration() + "\n" +
+                "    SessionTimeoutDuration: " + getSessionTimeoutDuration()
             );
     }
 
@@ -309,10 +275,6 @@ public class MPConfig {
     }
 
     public int getMinimumDatabaseLimit() { return mMinimumDatabaseLimit; }
-
-    public boolean getDisableFallback() {
-        return mDisableFallback;
-    }
 
     public boolean getDisableGestureBindingUI() {
         return mDisableGestureBindingUI;
@@ -351,22 +313,7 @@ public class MPConfig {
         return mDecideEndpoint;
     }
 
-    // Fallback URL for tracking events if post to preferred URL fails
-    public String getEventsFallbackEndpoint() {
-        return mEventsFallbackEndpoint;
-    }
-
-    // Fallback URL for tracking people if post to preferred URL fails
-    public String getPeopleFallbackEndpoint() {
-        return mPeopleFallbackEndpoint;
-    }
-
-    // Fallback URL for pulling decide data if preferred URL fails
-    public String getDecideFallbackEndpoint() {
-        return mDecideFallbackEndpoint;
-    }
-
-    // Check for and show eligible surveys and in app notifications on Activity changes
+    // Check for and show eligible in app notifications on Activity changes
     public boolean getAutoShowMixpanelUpdates() {
         return mAutoShowMixpanelUpdates;
     }
@@ -382,6 +329,18 @@ public class MPConfig {
 
     public boolean getIgnoreInvisibleViewsEditor() {
         return mIgnoreInvisibleViewsEditor;
+    }
+
+    public int getNotificationDefaults() {
+        return mNotificationDefaults;
+    }
+
+    public int getMinimumSessionDuration() {
+        return mMinSessionDuration;
+    }
+
+    public int getSessionTimeoutDuration() {
+        return mSessionTimeoutDuration;
     }
 
     // Pre-configured package name for resources, if they differ from the application package name
@@ -436,7 +395,6 @@ public class MPConfig {
     private final int mFlushInterval;
     private final int mDataExpiration;
     private final int mMinimumDatabaseLimit;
-    private final boolean mDisableFallback;
     private final boolean mTestMode;
     private final boolean mDisableGestureBindingUI;
     private final boolean mDisableEmulatorBindingUI;
@@ -444,17 +402,17 @@ public class MPConfig {
     private final boolean mDisableViewCrawler;
     private final String[] mDisableViewCrawlerForProjects;
     private final String mEventsEndpoint;
-    private final String mEventsFallbackEndpoint;
     private final String mPeopleEndpoint;
-    private final String mPeopleFallbackEndpoint;
     private final String mDecideEndpoint;
-    private final String mDecideFallbackEndpoint;
     private final boolean mAutoShowMixpanelUpdates;
     private final String mEditorUrl;
     private final String mResourcePackageName;
     private final boolean mDisableDecideChecker;
     private final int mImageCacheMaxMemoryFactor;
     private final boolean mIgnoreInvisibleViewsEditor;
+    private final int mNotificationDefaults;
+    private final int mMinSessionDuration;
+    private final int mSessionTimeoutDuration;
 
     // Mutable, with synchronized accessor and mutator
     private SSLSocketFactory mSSLSocketFactory;

@@ -33,6 +33,10 @@ import android.widget.TextView;
 
 import com.mixpanel.android.R;
 import com.mixpanel.android.util.MPLog;
+import com.mixpanel.android.util.ViewUtils;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Attached to an Activity when you display a mini in-app notification.
@@ -134,6 +138,7 @@ public class InAppFragment extends Fragment {
             public boolean onSingleTapUp(MotionEvent event) {
                 final MiniInAppNotification inApp = (MiniInAppNotification) mDisplayState.getInAppNotification();
 
+                JSONObject trackingProperties = null;
                 final String uriString = inApp.getCtaUrl();
                 if (uriString != null && uriString.length() > 0) {
                     Uri uri;
@@ -147,11 +152,18 @@ public class InAppFragment extends Fragment {
                     try {
                         Intent viewIntent = new Intent(Intent.ACTION_VIEW, uri);
                         mParent.startActivity(viewIntent);
-                        mMixpanel.getPeople().trackNotification("$campaign_open", inApp);
                     } catch (ActivityNotFoundException e) {
                         MPLog.i(LOGTAG, "User doesn't have an activity for notification URI " + uri);
                     }
+
+                    try {
+                        trackingProperties = new JSONObject();
+                        trackingProperties.put("url", uriString);
+                    } catch (final JSONException e) {
+                        MPLog.e(LOGTAG, "Can't put url into json properties");
+                    }
                 }
+                mMixpanel.getPeople().trackNotification("$campaign_open", inApp, trackingProperties);
 
                 remove();
                 return true;
@@ -187,8 +199,8 @@ public class InAppFragment extends Fragment {
 
             GradientDrawable viewBackground = new GradientDrawable();
             viewBackground.setColor(inApp.getBackgroundColor());
-            viewBackground.setCornerRadius(6);
-            viewBackground.setStroke(2, inApp.getBorderColor());
+            viewBackground.setCornerRadius(ViewUtils.dpToPx(7, getActivity()));
+            viewBackground.setStroke((int)ViewUtils.dpToPx(2, getActivity()), inApp.getBorderColor());
 
             if(Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
                 mInAppView.setBackgroundDrawable(viewBackground);
@@ -250,7 +262,8 @@ public class InAppFragment extends Fragment {
     }
 
     private void remove() {
-        if (mParent != null && !mCleanedUp) {
+        boolean isDestroyed = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 ? mParent.isDestroyed() : false;
+        if (mParent != null && !mParent.isFinishing() && !isDestroyed && !mCleanedUp) {
             mHandler.removeCallbacks(mRemover);
             mHandler.removeCallbacks(mDisplayMini);
 
@@ -259,7 +272,7 @@ public class InAppFragment extends Fragment {
             // setCustomAnimations works on a per transaction level, so the animations set
             // when this fragment was created do not apply
             FragmentTransaction transaction = fragmentManager.beginTransaction();
-            transaction.setCustomAnimations(0, R.anim.com_mixpanel_android_slide_down).remove(this).commit();
+            transaction.setCustomAnimations(0, R.animator.com_mixpanel_android_slide_down).remove(this).commit();
             UpdateDisplayState.releaseDisplayState(mDisplayStateId);
             mCleanedUp = true;
         }

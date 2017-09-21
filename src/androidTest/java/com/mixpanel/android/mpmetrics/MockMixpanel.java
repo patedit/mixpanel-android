@@ -142,11 +142,6 @@ class MockMixpanel extends MixpanelAPI {
         }
 
         @Override
-        public void showSurveyIfAvailable(final Activity parent) {
-            Assert.fail("Unexpected call");
-        }
-
-        @Override
         public void showNotificationIfAvailable(final Activity parent) {
             Assert.fail("Unexpected call");
         }
@@ -157,20 +152,9 @@ class MockMixpanel extends MixpanelAPI {
         }
 
         @Override
-        public Survey getSurveyIfAvailable() {
-            Assert.fail("Unexpected call");
-            return null;
-        }
-
-        @Override
         public InAppNotification getNotificationIfAvailable() {
             Assert.fail("Unexpected call");
             return null;
-        }
-
-        @Override
-        public void showSurveyById(int id, final Activity parent) {
-            Assert.fail("Unexpected call");
         }
 
         @Override
@@ -184,7 +168,7 @@ class MockMixpanel extends MixpanelAPI {
         }
 
         @Override
-        public void trackNotification(String eventName, InAppNotification notif) {
+        public void trackNotification(String eventName, InAppNotification notif, JSONObject properties) {
             Assert.fail("Unexpected call");
         }
 
@@ -219,20 +203,6 @@ class MockMixpanel extends MixpanelAPI {
             return null;
         }
 
-        @Override
-        public void checkForSurvey(final SurveyCallbacks callbacks) {
-            Assert.fail("Unexpected call");
-        }
-
-        @Override
-        public void checkForSurvey(final SurveyCallbacks callbacks, final Activity parent) {
-            Assert.fail("Unexpected call");
-        }
-
-        @Override
-        public void showSurvey(final Survey s, final Activity parent) {
-            Assert.fail("Unexpected call");
-        }
     };
 
 

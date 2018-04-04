@@ -3,7 +3,6 @@ package com.mixpanel.android.mpmetrics;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.Point;
 import android.os.Build;
 import android.view.Display;
@@ -25,7 +24,6 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -46,6 +44,7 @@ import javax.net.ssl.SSLSocketFactory;
     private static final String EVENT_BINDINGS = "event_bindings";
     private static final String VARIANTS = "variants";
     private static final String AUTOMATIC_EVENTS = "automatic_events";
+    private static final String INTEGRATIONS = "integrations";
 
     /* package */ static class Result {
         public Result() {
@@ -59,14 +58,15 @@ import javax.net.ssl.SSLSocketFactory;
         public JSONArray eventBindings;
         public JSONArray variants;
         public boolean automaticEvents;
+        public JSONArray integrations;
     }
 
-    public DecideChecker(final Context context, final MPConfig config, final SystemInformation systemInformation) {
+    public DecideChecker(final Context context, final MPConfig config) {
         mContext = context;
         mConfig = config;
         mChecks = new HashMap<String, DecideMessages>();
         mImageStore = createImageStore(context);
-        mSystemInformation = systemInformation;
+        mSystemInformation = SystemInformation.getInstance(context);
     }
 
     protected ImageStore createImageStore(final Context context) {
@@ -83,7 +83,9 @@ import javax.net.ssl.SSLSocketFactory;
             final String distinctId = updates.getDistinctId();
             try {
                 final Result result = runDecideCheck(updates.getToken(), distinctId, poster);
-                updates.reportResults(result.notifications, result.eventBindings, result.variants, result.automaticEvents);
+                if (result != null) {
+                    updates.reportResults(result.notifications, result.eventBindings, result.variants, result.automaticEvents, result.integrations);
+                }
             } catch (final UnintelligibleMessageException e) {
                 MPLog.e(LOGTAG, e.getMessage(), e);
             }
@@ -104,25 +106,25 @@ import javax.net.ssl.SSLSocketFactory;
 
         MPLog.v(LOGTAG, "Mixpanel decide server response was:\n" + responseString);
 
-        Result parsed = new Result();
-        if (null != responseString) {
-            parsed = parseDecideResponse(responseString);
-        }
+        Result parsedResult = null;
+        if (responseString != null) {
+            parsedResult = parseDecideResponse(responseString);
 
-        final Iterator<InAppNotification> notificationIterator = parsed.notifications.iterator();
-        while (notificationIterator.hasNext()) {
-            final InAppNotification notification = notificationIterator.next();
-            final Bitmap image = getNotificationImage(notification, mContext);
-            if (null == image) {
-                MPLog.i(LOGTAG, "Could not retrieve image for notification " + notification.getId() +
-                        ", will not show the notification.");
-                notificationIterator.remove();
-            } else {
-                notification.setImage(image);
+            final Iterator<InAppNotification> notificationIterator = parsedResult.notifications.iterator();
+            while (notificationIterator.hasNext()) {
+                final InAppNotification notification = notificationIterator.next();
+                final Bitmap image = getNotificationImage(notification, mContext);
+                if (null == image) {
+                    MPLog.i(LOGTAG, "Could not retrieve image for notification " + notification.getId() +
+                            ", will not show the notification.");
+                    notificationIterator.remove();
+                } else {
+                    notification.setImage(image);
+                }
             }
         }
 
-        return parsed;
+        return parsedResult;
     }// runDecideCheck
 
     /* package */ static Result parseDecideResponse(String responseString)
@@ -191,6 +193,14 @@ import javax.net.ssl.SSLSocketFactory;
                 ret.automaticEvents = response.getBoolean(AUTOMATIC_EVENTS);
             } catch (JSONException e) {
                 MPLog.e(LOGTAG, "Mixpanel endpoint returned a non boolean value for automatic events: " + response);
+            }
+        }
+
+        if (response.has(INTEGRATIONS)) {
+            try {
+                ret.integrations = response.getJSONArray(INTEGRATIONS);
+            } catch (final JSONException e) {
+                MPLog.e(LOGTAG, "Mixpanel endpoint returned a non-array JSON for integrations: " + response);
             }
         }
 
@@ -276,7 +286,7 @@ import javax.net.ssl.SSLSocketFactory;
     @SuppressWarnings("deprecation")
     @SuppressLint("NewApi")
     private static int getDisplayWidth(final Display display) {
-        if (Build.VERSION.SDK_INT < 13) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB_MR2) {
             return display.getWidth();
         } else {
             final Point displaySize = new Point();

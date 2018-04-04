@@ -8,7 +8,6 @@ import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -37,6 +36,8 @@ import com.mixpanel.android.util.ViewUtils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Attached to an Activity when you display a mini in-app notification.
@@ -174,7 +175,7 @@ public class InAppFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mCleanedUp = false;
+        mCleanedUp.set(false);
     }
 
     @SuppressWarnings("deprecation")
@@ -220,7 +221,7 @@ public class InAppFragment extends Fragment {
     public void onStart() {
         super.onStart();
 
-        if (mCleanedUp) {
+        if (mCleanedUp.get()) {
             mParent.getFragmentManager().beginTransaction().remove(this).commit();
         }
     }
@@ -236,34 +237,32 @@ public class InAppFragment extends Fragment {
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState) {
-        cleanUp();
-        super.onSaveInstanceState(outState);
-    }
-
-    @Override
     public void onPause() {
         super.onPause();
         cleanUp();
     }
 
     private void cleanUp() {
-        if (!mCleanedUp) {
+        if (!mCleanedUp.get()) {
             mHandler.removeCallbacks(mRemover);
             mHandler.removeCallbacks(mDisplayMini);
             UpdateDisplayState.releaseDisplayState(mDisplayStateId);
 
             final FragmentManager fragmentManager = mParent.getFragmentManager();
             FragmentTransaction transaction = fragmentManager.beginTransaction();
-            transaction.remove(this).commit();
+            try {
+                transaction.remove(this).commit();
+            } catch (IllegalStateException e) {
+                fragmentManager.beginTransaction().remove(this).commitAllowingStateLoss();
+            }
         }
 
-        mCleanedUp = true;
+        mCleanedUp.set(true);
     }
 
     private void remove() {
         boolean isDestroyed = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 ? mParent.isDestroyed() : false;
-        if (mParent != null && !mParent.isFinishing() && !isDestroyed && !mCleanedUp) {
+        if (mParent != null && !mParent.isFinishing() && !isDestroyed && !mCleanedUp.get()) {
             mHandler.removeCallbacks(mRemover);
             mHandler.removeCallbacks(mDisplayMini);
 
@@ -272,9 +271,13 @@ public class InAppFragment extends Fragment {
             // setCustomAnimations works on a per transaction level, so the animations set
             // when this fragment was created do not apply
             FragmentTransaction transaction = fragmentManager.beginTransaction();
-            transaction.setCustomAnimations(0, R.animator.com_mixpanel_android_slide_down).remove(this).commit();
+            try {
+                transaction.setCustomAnimations(0, R.animator.com_mixpanel_android_slide_down).remove(this).commit();
+            } catch (IllegalStateException e) {
+                fragmentManager.beginTransaction().setCustomAnimations(0, R.animator.com_mixpanel_android_slide_down).remove(this).commitAllowingStateLoss();
+            }
             UpdateDisplayState.releaseDisplayState(mDisplayStateId);
-            mCleanedUp = true;
+            mCleanedUp.set(true);
         }
     }
 
@@ -294,7 +297,7 @@ public class InAppFragment extends Fragment {
     private Runnable mRemover, mDisplayMini;
     private View mInAppView;
 
-    private boolean mCleanedUp;
+    private AtomicBoolean mCleanedUp = new AtomicBoolean();
 
     private static final String LOGTAG = "MixpanelAPI.InAppFrag";
     private static final int MINI_REMOVE_TIME = 10000;

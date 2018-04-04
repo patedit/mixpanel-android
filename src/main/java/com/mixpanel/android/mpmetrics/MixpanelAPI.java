@@ -265,6 +265,7 @@ public class MixpanelAPI {
         mEventTimings = mPersistentIdentity.getTimeEvents();
         mUpdatesListener = constructUpdatesListener();
         mDecideMessages = constructDecideUpdates(token, mUpdatesListener, mUpdatesFromMixpanel);
+        mConnectIntegrations = new ConnectIntegrations(this);
 
         // TODO reading persistent identify immediately forces the lazy load of the preferences, and defeats the
         // purpose of PersistentIdentity's laziness.
@@ -733,7 +734,7 @@ public class MixpanelAPI {
     }
 
     /**
-     * Clears all distinct_ids, superProperties, and push registrations from persistent storage.
+     * Clears tweaks and all distinct_ids, superProperties, and push registrations from persistent storage.
      * Will not clear referrer information.
      */
     public void reset() {
@@ -742,6 +743,9 @@ public class MixpanelAPI {
         // on messages already queued to send with AnalyticsMessages.
         mPersistentIdentity.clearPreferences();
         identify(getDistinctId());
+        mConnectIntegrations.reset();
+        mUpdatesFromMixpanel.storeVariants(new JSONArray());
+        mUpdatesFromMixpanel.applyPersistedUpdates();
         flush();
     }
 
@@ -1316,6 +1320,12 @@ public class MixpanelAPI {
         return false;
     }
 
+
+    /* package */ void onBackground() {
+        flush();
+        mUpdatesFromMixpanel.applyPersistedUpdates();
+    }
+
     // Package-level access. Used (at least) by GCMReceiver
     // when OS-level events occur.
     /* package */ interface InstanceProcessor {
@@ -1723,7 +1733,7 @@ public class MixpanelAPI {
             else { // Configuration is good for at least some push notifications
                 final String pushId = mPersistentIdentity.getPushId();
                 if (pushId == null) {
-                    if (Build.VERSION.SDK_INT >= 21) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         registerForPushIdAPI21AndUp(senderID);
                     } else {
                         registerForPushIdAPI19AndOlder(senderID);
@@ -1930,6 +1940,11 @@ public class MixpanelAPI {
         }
 
         @Override
+        public void onNewConnectIntegrations() {
+            // Do nothing, not supported
+        }
+
+        @Override
         public void addOnMixpanelUpdatesReceivedListener(OnMixpanelUpdatesReceivedListener listener) {
             // Do nothing, not supported
         }
@@ -1944,6 +1959,11 @@ public class MixpanelAPI {
         @Override
         public void onNewResults() {
             mExecutor.execute(this);
+        }
+
+        @Override
+        public void onNewConnectIntegrations() {
+            mConnectIntegrations.setupIntegrations(mDecideMessages.getIntegrations());
         }
 
         @Override
@@ -1980,6 +2000,16 @@ public class MixpanelAPI {
 
         @Override
         public void startUpdates() {
+            // No op
+        }
+
+        @Override
+        public void storeVariants(JSONArray variants) {
+            // No op
+        }
+
+        @Override
+        public void applyPersistedUpdates() {
             // No op
         }
 
@@ -2057,7 +2087,9 @@ public class MixpanelAPI {
                 final Iterator<?> propIter = properties.keys();
                 while (propIter.hasNext()) {
                     final String key = (String) propIter.next();
-                    messageProps.put(key, properties.get(key));
+                    if (!properties.isNull(key)) {
+                        messageProps.put(key, properties.get(key));
+                    }
                 }
             }
 
@@ -2169,6 +2201,7 @@ public class MixpanelAPI {
     private final PersistentIdentity mPersistentIdentity;
     private final UpdatesListener mUpdatesListener;
     private final TrackingDebug mTrackingDebug;
+    private final ConnectIntegrations mConnectIntegrations;
     private final DecideMessages mDecideMessages;
     private final Map<String, String> mDeviceInfo;
     private final Map<String, Long> mEventTimings;

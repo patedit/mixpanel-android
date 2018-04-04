@@ -4,6 +4,9 @@ import android.support.annotation.IntDef;
 
 import com.mixpanel.android.util.MPLog;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
@@ -52,7 +55,6 @@ public class Tweaks {
 
     public synchronized boolean isNewValue(String tweakName, Object value) {
         if (!mTweakValues.containsKey(tweakName)) {
-            MPLog.w(LOGTAG, "Attempt to reference a tweak \"" + tweakName + "\" which has never been defined.");
             return false;
         }
 
@@ -230,9 +232,67 @@ public class Tweaks {
             return maximum;
         }
 
+        public Object getDefaultValue() {
+            return defaultValue;
+        }
+
+        public Object getValue() {
+            return value;
+        }
+
         public final @TweakType int type;
 
-        protected final Object value;
+        public static TweakValue fromJson(JSONObject tweakDesc) {
+            try {
+                final String tweakName = tweakDesc.getString("name");
+                final String type = tweakDesc.getString("type");
+                Object value, defaultValue;
+                Number minimum = null, maximum = null;
+                @TweakType int tweakType;
+                if ("number".equals(type)) {
+                    final String encoding = tweakDesc.getString("encoding");
+                    if ("d".equals(encoding)) {
+                        tweakType = DOUBLE_TYPE;
+                        value = tweakDesc.getDouble("value");
+                        defaultValue = tweakDesc.getDouble("default");
+                        if (!tweakDesc.isNull("minimum")) {
+                            minimum = tweakDesc.getDouble("minimum");
+                        }
+                        if (!tweakDesc.isNull("maximum")) {
+                            maximum = tweakDesc.getDouble("maximum");
+                        }
+                    } else if ("l".equals(encoding)) {
+                        value = tweakDesc.getLong("value");
+                        tweakType = LONG_TYPE;
+                        defaultValue = tweakDesc.getLong("default");
+                        if (!tweakDesc.isNull("minimum")) {
+                            minimum = tweakDesc.getLong("minimum");
+                        }
+                        if (!tweakDesc.isNull("maximum")) {
+                            maximum = tweakDesc.getLong("maximum");
+                        }
+                    } else {
+                        return null;
+                    }
+                } else if ("boolean".equals(type)) {
+                    tweakType = BOOLEAN_TYPE;
+                    value = tweakDesc.getBoolean("value");
+                    defaultValue = tweakDesc.getBoolean("default");
+                } else if ("string".equals(type)) {
+                    tweakType = STRING_TYPE;
+                    value = tweakDesc.getString("value");
+                    defaultValue = tweakDesc.getString("default");
+                } else {
+                    return null;
+                }
+
+                return new TweakValue(tweakType, defaultValue, minimum, maximum, value, tweakName);
+            } catch (JSONException e) {}
+
+            return null;
+        }
+
+        private final Object value;
         private final Object defaultValue;
         private final Number minimum;
         private final Number maximum;
@@ -250,6 +310,7 @@ public class Tweaks {
     /* package */ Tweaks() {
         mTweakValues = new ConcurrentHashMap<>();
         mTweakDefaultValues = new ConcurrentHashMap<>();
+        mUndeclaredTweaks = new ConcurrentHashMap<>();
         mTweakDeclaredListeners = new ArrayList<>();
     }
 
@@ -400,13 +461,26 @@ public class Tweaks {
         return mTweakValues.get(tweakName);
     }
 
-    private void declareTweak(String tweakName, Object defaultValue, Number minimumValue, Number maximumValue, @TweakType int tweakType) {
+    public void addUndeclaredTweak(String tweakName, TweakValue notDeclaredTweak) {
+        if (tweakName == null || notDeclaredTweak == null) {
+            return;
+        }
+        mUndeclaredTweaks.put(tweakName, notDeclaredTweak);
+    }
+
+    public void declareTweak(String tweakName, Object defaultValue, Number minimumValue, Number maximumValue, @TweakType int tweakType) {
         if (mTweakValues.containsKey(tweakName)) {
             MPLog.w(LOGTAG, "Attempt to define a tweak \"" + tweakName + "\" twice with the same name");
             return;
         }
 
-        final TweakValue value = new TweakValue(tweakType, defaultValue, minimumValue, maximumValue, defaultValue, tweakName);
+        TweakValue value;
+        if (mUndeclaredTweaks.containsKey(tweakName)) {
+            value = mUndeclaredTweaks.get(tweakName);
+            mUndeclaredTweaks.remove(tweakName);
+        } else {
+            value = new TweakValue(tweakType, defaultValue, minimumValue, maximumValue, defaultValue, tweakName);
+        }
         mTweakValues.put(tweakName, value);
         mTweakDefaultValues.put(tweakName, value);
         final int listenerSize = mTweakDeclaredListeners.size();
@@ -418,6 +492,7 @@ public class Tweaks {
     // All access to mTweakValues must be synchronized
     private final ConcurrentMap<String, TweakValue> mTweakValues;
     private final ConcurrentMap<String, TweakValue> mTweakDefaultValues;
+    private final ConcurrentMap<String, TweakValue> mUndeclaredTweaks;
     private final List<OnTweakDeclaredListener> mTweakDeclaredListeners;
 
     private static final String LOGTAG = "MixpanelAPI.Tweaks";

@@ -101,7 +101,7 @@ public class DecideFunctionalTest extends AndroidTestCase {
                         final Handler ret = new AnalyticsMessageHandler(thread.getLooper()) {
                             @Override
                             protected DecideChecker createDecideChecker() {
-                                return new DecideChecker(mContext, mConfig, new SystemInformation(mContext)) {
+                                return new DecideChecker(mContext, mConfig) {
                                     @Override
                                     protected ImageStore createImageStore(final Context context) {
                                         return new ImageStore(context, "MixpanelAPI.Images.DecideChecker", mMockPoster);
@@ -116,7 +116,7 @@ public class DecideFunctionalTest extends AndroidTestCase {
         };
 
         try {
-            SystemInformation systemInformation = new SystemInformation(mContext);
+            SystemInformation systemInformation = SystemInformation.getInstance(mContext);
 
             final StringBuilder queryBuilder = new StringBuilder();
             queryBuilder.append("&properties=");
@@ -340,13 +340,26 @@ public class DecideFunctionalTest extends AndroidTestCase {
         }
 
         @Override
-        public void reportResults(List<InAppNotification> newNotifications, JSONArray newBindings, JSONArray variants, boolean isAutomaticEvents) {
-            super.reportResults(newNotifications, newBindings, variants, isAutomaticEvents);
+        public void reportResults(List<InAppNotification> newNotifications,
+                                  JSONArray eventBindings,
+                                  JSONArray variants,
+                                  boolean automaticEvents,
+                                  JSONArray integrations) {
+            super.reportResults(newNotifications, eventBindings, variants, automaticEvents, integrations);
             mExpectations.resolve();
         }
     }
 
     private class MockUpdates implements UpdatesFromMixpanel {
+
+        @Override
+        public void applyPersistedUpdates() {
+        }
+
+        @Override
+        public void storeVariants(JSONArray variants) {
+        }
+
         @Override
         public void startUpdates() {
             ;

@@ -4,7 +4,7 @@
 
 # Latest Version [![Build Status](https://travis-ci.org/mixpanel/mixpanel-android.svg)](https://travis-ci.org/mixpanel/mixpanel-android)
 
-##### _June 23, 2017_ - [v5.1.4](https://github.com/mixpanel/mixpanel-android/releases/tag/v5.1.4)
+##### _February 20, 2018_ - [v5.3.0](https://github.com/mixpanel/mixpanel-android/releases/tag/v5.3.0)
 
 # Table of Contents
 
@@ -34,14 +34,19 @@ Add Mixpanel and Google Play Services to the `dependencies` section in *app/buil
 
 ```gradle
 compile "com.mixpanel.android:mixpanel-android:5.+"
-compile "com.google.android.gms:play-services:7.5.0+"
+compile "com.google.android.gms:play-services-gcm:7.5.0+"
 ```
 
 ### Permissions in *app/src/main/AndroidManifest.xml*
 
 ```xml
+<!-- This permission is required to allow the application to send events and properties to Mixpanel -->
 <uses-permission android:name="android.permission.INTERNET" />
+
+<!-- This permission is optional but recommended so we can be smart about when to send data  -->
 <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+<!-- This permission is optional but recommended so events will contain information about bluetooth state -->
 <uses-permission android:name="android.permission.BLUETOOTH" />
 ```
 

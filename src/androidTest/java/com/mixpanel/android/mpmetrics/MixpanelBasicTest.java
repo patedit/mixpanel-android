@@ -961,6 +961,14 @@ public class MixpanelBasicTest extends AndroidTestCase {
             protected AnalyticsMessages getAnalyticsMessages() {
                 return listener;
             }
+
+            @Override
+            protected void track(String eventName, JSONObject properties, boolean isAutomaticEvent) {
+                if (isAutomaticEvent) {
+                    return;
+                }
+                super.track(eventName, properties, isAutomaticEvent);
+            }
         };
 
         metrics.track("First Event");
